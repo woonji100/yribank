@@ -1,0 +1,6 @@
+config/update.secret.json
+installed.json
+update-check.json
+*.log
+.update/
+dist/
