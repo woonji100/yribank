@@ -1814,7 +1814,7 @@ function renderTop(){
   $('#k-spent-s').textContent = PART === 'se' ? '입력한 출금(납부) 합계' : t.s9 || t.inp ? '원본 장부 ' + short(t.s9) + ' + 입력 ' + fmt(t.inp) : '원본 장부 + 입력분';
   $('#k-rem').textContent = fmt(t.bud - sp);
   $('#k-rem').classList.toggle('neg', t.bud - sp < 0);
-  { const el = $('#k-rem-s'); if (el) { const bb = PART === 'se' ? null : bookBalance(); el.textContent = PART === 'se' ? '예산 − 집행합계' : bb ? '예산 − 집행합계 · 통장 잔액은 ' + fmt(bb.bal) : '예산 − 집행합계 (통장 잔액과 다름)'; } }
+  { const el = $('#k-rem-s'); if (el) { const bb = PART === 'se' ? null : bookBalance(); el.textContent = PART === 'se' ? '예산 − 집행합계' : bb ? '예산 − 집행합계 · 통장 잔액은 ' + fmt(bb.bal) : '예산 − 집행합계'; } }
   const rt = t.bud ? sp / t.bud : 0;
   $('#k-rate').textContent = (rt * 100).toFixed(1) + '%';
   $('#k-meter').style.width = Math.min(100, rt * 100) + '%';
