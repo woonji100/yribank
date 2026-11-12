@@ -450,7 +450,7 @@ body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd
   <section class="kpis" aria-label="전체 요약" style="margin-bottom:0">
     <div class="kpi"><div class="l">예산액</div><div class="v" id="k-bud">–</div><div class="s" id="k-bud-s">당초 + 추경</div></div>
     <div class="kpi"><div class="l">집행합계</div><div class="v" id="k-spent">–</div><div class="s" id="k-spent-s">원본 장부 + 입력분</div></div>
-    <div class="kpi"><div class="l">집행잔액</div><div class="v" id="k-rem">–</div><div class="s">예산 − 집행합계</div></div>
+    <div class="kpi"><div class="l">집행잔액</div><div class="v" id="k-rem">–</div><div class="s" id="k-rem-s">예산 − 집행합계</div></div>
     <div class="kpi"><div class="l">집행률</div><div class="v" id="k-rate">–</div><div class="meter"><b id="k-meter" style="width:0%"></b></div></div>
   </section>
 
@@ -1365,7 +1365,7 @@ function snapBuild(){
   }));
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v3.2', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v3.3', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears() };
 }
 function snapText(){ return '/* 통장 가계부 현황 자료 — 「현황 보기」 파일이 읽는 자료입니다. 직접 고치지 마세요. */\nwindow.__CCG_SNAP=' + JSON.stringify(snapBuild()) + ';\n'; }
 let shT = null;
@@ -1814,6 +1814,7 @@ function renderTop(){
   $('#k-spent-s').textContent = PART === 'se' ? '입력한 출금(납부) 합계' : t.s9 || t.inp ? '원본 장부 ' + short(t.s9) + ' + 입력 ' + fmt(t.inp) : '원본 장부 + 입력분';
   $('#k-rem').textContent = fmt(t.bud - sp);
   $('#k-rem').classList.toggle('neg', t.bud - sp < 0);
+  { const el = $('#k-rem-s'); if (el) { const bb = PART === 'se' ? null : bookBalance(); el.textContent = PART === 'se' ? '예산 − 집행합계' : bb ? '예산 − 집행합계 · 통장 잔액은 ' + fmt(bb.bal) : '예산 − 집행합계 (통장 잔액과 다름)'; } }
   const rt = t.bud ? sp / t.bud : 0;
   $('#k-rate').textContent = (rt * 100).toFixed(1) + '%';
   $('#k-meter').style.width = Math.min(100, rt * 100) + '%';
@@ -3930,10 +3931,10 @@ function setPart(p){
   document.body.classList.remove('landing'); document.body.dataset.part = p;
   const se = p === 'se', has = !!DATA.master.length;
   $('#app-h1').textContent = FH[p];
-  $('#app-sub').textContent = se ? '용인시정연구원 · 세금·4대보험 예수금' : has ? '용인시정연구원 · ' + BASEY + '년 1~' + CUT + '월은 원본 장부에 반영됨' + (CUT < 12 ? ', ' + (CUT + 1) + '월분부터 입력' : '') : '용인시정연구원 · 엑셀을 아직 불러오지 않았습니다 (관리 → 설정)'; PHEAD.h = $('#app-h1').textContent; PHEAD.s = $('#app-sub').textContent;
+  $('#app-sub').textContent = VIEW ? '용인시정연구원' : se ? '용인시정연구원 · 세금·4대보험 예수금' : has ? '용인시정연구원 · ' + BASEY + '년 1~' + CUT + '월은 원본 장부에 반영됨' + (CUT < 12 ? ', ' + (CUT + 1) + '월분부터 입력' : '') : '용인시정연구원 · 엑셀을 아직 불러오지 않았습니다 (관리 → 설정)'; PHEAD.h = $('#app-h1').textContent; PHEAD.s = $('#app-sub').textContent;
   if (!se) {
     const nc = $('#note-chul'); if (nc) nc.innerHTML = DATA.noteChul || '<ul><li>' + FTITLE[p] + ' 엑셀을 아직 불러오지 않았습니다. 「관리 → 설정 → 엑셀에서 장부 불러오기」에서 불러오세요.</li></ul>';
-    const bf = $('#b-foot'); if (bf) bf.textContent = has ? '원본 장부는 엑셀에서 불러온 ' + BASEY + '년 1~' + CUT + '월 지출입니다. 입력분은 이 가계부에 넣은 지출을 소분류별로 모은 값이며, 같은 지출을 두 번 넣으면 이중으로 잡힙니다.' : '엑셀을 불러오면 예산과 원본 지출이 채워집니다.';
+    const bf = $('#b-foot'); if (bf) bf.hidden = VIEW; if (bf) bf.textContent = has ? '원본 장부는 엑셀에서 불러온 ' + BASEY + '년 1~' + CUT + '월 지출입니다. 입력분은 이 가계부에 넣은 지출을 소분류별로 모은 값이며, 같은 지출을 두 번 넣으면 이중으로 잡힙니다.' : '엑셀을 불러오면 예산과 원본 지출이 채워집니다.';
   }
   IMP.fund = se ? 'chul' : p; $('#imp-fund').value = IMP.fund; IMP.yr = BASEY;
   $('#in-t').placeholder = se ? '무엇이 들어오거나 나갔나요?  예) 10월 국민연금' : '무엇에 썼나요?  예) 10월 우편요금';
@@ -5270,12 +5271,21 @@ const XP = (function(){
     sh.tail = sh.tail.replace(/<(autoFilter|mergeCell) ref="([^"]+)"/g, (a, t, rg) => '<' + t + ' ref="' + shiftRange(rg, R, k) + '"').replace(/sqref="([^"]+)"/g, (a, rg) => 'sqref="' + shiftRange(rg, R, k) + '"');
   }
   /* 월 블록 찾기 */
-  function findBlocks(sh, sst, textCol, first){
-    const bl = []; let prevN = first - 1, wol = 0;
+  function findBlocks(sh, sst, textCol, first, outCol, mR){
+    const bl = []; let prevN = first - 1, wol = 0; const L = outCol >= 0 ? colNm(outCol) : '';
     Array.from(sh.rows.keys()).sort((a, b) => a - b).forEach(r => {
       if (r < first) return;
       const t = String(val(cellsOf(sh.rows.get(r)).get(textCol), sst)).replace(/\s+/g, '');
-      if (t === '월계') wol = r; else if (t === '누계' && wol) { bl.push({ start: bl.length ? prevN + 2 : first, end: wol - 2, wol, nu: r, prevNu: bl.length ? prevN : 0 }); prevN = r; wol = 0; }
+      if (t === '월계') wol = r; else if (t === '누계' && wol) {
+        const s0 = bl.length ? prevN + 1 : first, ok = (a, b) => a >= s0 && b <= wol - 1 && b >= a, rs = [];
+        const gc = L ? cellsOf(sh.rows.get(wol)).get(outCol) : null, fm = gc && /<f[^>]*>([^<]*)<\/f>/.exec(gc.inner);
+        if (fm) { const mm = new RegExp('SUM\\(\\$?' + L + '\\$?(\\d+):\\$?' + L + '\\$?(\\d+)\\)').exec(unesc(fm[1])); if (mm && ok(+mm[1], +mm[2])) rs.push([+mm[1], +mm[2]]); }
+        (mR || []).forEach(list => { let best = null; list.forEach(x => { if (ok(x.a, x.b) && (!best || x.n > best.n)) best = x; }); if (best) rs.push([best.a, best.b]); });
+        let start = s0, end = wol - 2, tail = wol - 2;
+        if (rs.length) { start = Math.max(s0, ...rs.map(x => x[0])); end = Math.min(...rs.map(x => x[1])); tail = Math.max(...rs.map(x => x[1])); }
+        if (end < start) { start = s0; end = wol - 2; tail = wol - 2; }
+        bl.push({ start, end, scan0: s0, tail, wol, nu: r, prevNu: bl.length ? prevN : 0 }); prevN = r; wol = 0;
+      }
     });
     return bl;
   }
@@ -5296,7 +5306,20 @@ const XP = (function(){
     const stCol = M.cparts >= 0 ? M.cparts : (M.card >= 0 ? M.card + 1 : 9), cardCol = M.card >= 0 ? M.card : stCol - 1;
     if (M.mon < 0 || M.day < 0) throw new Error('월·일이 따로 있는 현금출납부만 갱신할 수 있습니다');
     let sh = parseSheet(unshare(cashXml));
-    const first = (C.first || 3), blocks = findBlocks(sh, sst, M.text, first);
+    /* 월말결산이 세는 현금출납 범위 (월별 SUMIF·COUNTIF) */
+    const mR = [];
+    { const bfx = spec.bud && spec.bud.sheet ? sheetFile(spec.bud.sheet) : null;
+      if (bfx && byName.has(bfx)) {
+        const t0 = await textOf(byName.get(bfx)), nmRe = cashNm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), G = colNm(M.out), Cl = M.label >= 0 ? colNm(M.label) : '';
+        const reS = new RegExp("SUMIF\\('?" + nmRe + "'?!\\$?[A-Z]+\\$?\\d+:\\$?[A-Z]+\\$?\\d+,[^,]*,'?" + nmRe + "'?!\\$?" + G + "\\$?(\\d+):\\$?" + G + "\\$?(\\d+)\\)", 'g');
+        const reC = Cl ? new RegExp("COUNTIF\\('?" + nmRe + "'?!\\$?" + Cl + "\\$?(\\d+):\\$?" + Cl + "\\$?(\\d+),", 'g') : null;
+        const cS = new Map(), cC = new Map(), bump = (mp, a, b) => { const k = a + ':' + b; mp.set(k, (mp.get(k) || 0) + 1); };
+        for (const fm of t0.matchAll(/<f[^>]*>([^<]*)<\/f>/g)) { const t = unesc(fm[1]); if (t.indexOf('IF(') < 0) continue; for (const x of t.matchAll(reS)) bump(cS, +x[1], +x[2]); if (reC) for (const x of t.matchAll(reC)) bump(cC, +x[1], +x[2]); }
+        [cS, cC].forEach(mp => { const l = []; mp.forEach((n, k) => { const ab = k.split(':').map(Number); l.push({ a: ab[0], b: ab[1], n }); }); if (l.length) mR.push(l); });
+      }
+    }
+    const first = (C.first || 3), blocks = findBlocks(sh, sst, M.text, first, M.out, mR);
+    const shiftBlocks = (R, k) => blocks.forEach(x => ['start', 'end', 'scan0', 'tail', 'wol', 'nu', 'prevNu'].forEach(f => { if (x[f] > 0 && x[f] >= R) x[f] += k; }));
     if (blocks.length < 12) throw new Error('현금출납 시트에서 월 칸(월 계·누 계)을 12개 찾지 못했습니다');
     const rd = r => cellsOf(sh.rows.get(r) || '');
     const rowInfo = (r) => {
@@ -5307,29 +5330,58 @@ const XP = (function(){
     const toN = v => typeof v === 'number' ? v : (Number(String(v).replace(/[,\s]/g, '')) || 0);
     /* 월별 할 일 */
     const adds = new Map(); (spec.adds || []).forEach(a => { if (!(a.m >= 1 && a.m <= 12)) return; (adds.get(a.m) || adds.set(a.m, []).get(a.m)).push(a); });
-    const work = spec.work || []; let lastM = 0; blocks.forEach((b, bi) => { for (let r = b.start; r <= b.end; r++) if (sh.rows.has(r) && rowInfo(r).keep) { lastM = bi + 1; break; } });
+    const work = spec.work || []; let lastM = 0; blocks.forEach((b, bi) => { for (let r = b.scan0; r <= b.tail; r++) if (sh.rows.has(r) && rowInfo(r).keep) { lastM = bi + 1; break; } });
     adds.forEach((_, m) => { if (m > lastM) lastM = m; });
     const tm = Math.min(12, Math.max(1, spec.statusMonth || 0, lastM)); rep.month = tm;
     const months = new Set([...adds.keys(), tm]); const ops = [];
     // 모든 블록의 결재중·품의만 칸은 비움 (작업창이 기준)
     blocks.forEach((b, bi) => {
       const m = bi + 1; if (m > 12) return;
-      let hasSt = false; for (let r = b.start; r <= b.end; r++) if (sh.rows.has(r) && rowInfo(r).st) { hasSt = true; break; }
+      let hasSt = false; for (let r = b.scan0; r < b.wol; r++) if (sh.rows.has(r) && rowInfo(r).st) { hasSt = true; break; }
       if (hasSt || months.has(m)) ops.push({ m, b });
     });
     ops.sort((x, y) => y.b.start - x.b.start);
+    // 같은 지출이 엑셀에 가계부 건수보다 많이 들어 있으면 (새 줄을 쓰기 전에 정리):
+    //   가계부가 예전에 써 넣은 줄(글자 칸이 inlineStr)은 뒤에서부터 비움
+    //   — 아래에 내역이 더 있으면 잔액 수식은 남겨 잔액이 그대로 이어지게, 맨 끝 줄이면 통째로 비움
+    //   그래도 남으면(직접 적은 줄끼리 겹침) 알려 줌
+    rep.dupRows = []; rep.dupFixed = [];
+    blocks.forEach((b, bi) => {
+      const m = bi + 1; if (m > 12) return; const ak = new Map(), rk = new Map();
+      (adds.get(m) || []).forEach(a => { const k = Math.round(Math.abs(a.out || a.inn)) + '|' + norm(a.text); ak.set(k, (ak.get(k) || 0) + 1); });
+      if (!ak.size) return;
+      for (let r = b.scan0; r < b.wol; r++) {
+        if (!sh.rows.has(r)) continue; const ri = rowInfo(r); if (!ri.keep) continue;
+        const amt = Math.round(Math.abs(ri.out || ri.inn)), k = amt + '|' + norm(ri.text); if (!amt || !ak.has(k)) continue;
+        const x = rk.get(k) || { n: 0, label: ri.label, text: String(ri.text), amt, rows: [] }; x.n++; x.rows.push(r); rk.set(k, x);
+      }
+      rk.forEach((x, k) => {
+        let extra = x.n - ak.get(k); if (extra <= 0) return; const gone = [];
+        for (let i = x.rows.length - 1; i >= 0 && extra > 0; i--) {
+          const r = x.rows[i], tc = rd(r).get(M.text); if (!tc || tc.t !== 'inlineStr') continue;
+          let below = false; for (let q = r + 1; q < b.wol; q++) if (sh.rows.has(q) && rowInfo(q).keep) { below = true; break; }
+          const e = new Map(); for (let j = 0; j <= Math.max(stCol, cardCol, M.bal, M.out); j++) if (j !== M.bal || !below) e.set(j, { clear: true });
+          sh.rows.set(r, writeRow(sh.rows.get(r), r, e, null)); gone.unshift(r); extra--;
+        }
+        if (gone.length) rep.dupFixed.push(Object.assign({ m }, x, { rows: gone }));
+        if (extra > 0) rep.dupRows.push(Object.assign({ m }, x, { rows: x.rows.filter(r => gone.indexOf(r) < 0) }));
+      });
+    });
         for (const op of ops) {
       const m = op.m; let b = blocks[m - 1];
+      // 지난번에 적은 결재중·품의만 줄은 먼저 비움 (그 달 자리 전체 + 「월 계」 바로 위)
+      for (let r = b.scan0; r < b.wol; r++) { if (!sh.rows.has(r) || !rowInfo(r).st) continue; const e = new Map(); for (let i = 0; i <= Math.max(stCol, cardCol, M.bal, M.out); i++) e.set(i, { clear: true }); sh.rows.set(r, writeRow(sh.rows.get(r), r, e, null)); }
       // 이 블록 현재 상태
       const lastKeepOf = () => { let lk = b.start - 1, any = false; for (let r = b.start; r <= b.end; r++) { if (!sh.rows.has(r)) continue; const ri = rowInfo(r); if (ri.keep) { lk = r; any = true; } } return lk; };
       let lk = lastKeepOf();
       // 이미 들어 있는 건 건너뛰기
-      const seen = new Set(); for (let r = b.start; r <= lk; r++) { if (!sh.rows.has(r)) continue; const ri = rowInfo(r); if (ri.keep) { seen.add(Math.round(Math.abs(ri.out || ri.inn)) + '|' + norm(ri.text)); const din = ri.inn > 0 ? ri.inn : ri.out < 0 ? -ri.out : 0; if (din && (isDepo(ri.label) || (!ri.label.trim() && /예금/.test(String(ri.text))))) seen.add('D|' + Math.round(din)); } }
+      const seen = new Set(); for (let r = b.scan0; r < b.wol; r++) { if (!sh.rows.has(r)) continue; const ri = rowInfo(r); if (ri.keep) { seen.add(Math.round(Math.abs(ri.out || ri.inn)) + '|' + norm(ri.text)); const din = ri.inn > 0 ? ri.inn : ri.out < 0 ? -ri.out : 0; if (din && (isDepo(ri.label) || (!ri.label.trim() && /예금/.test(String(ri.text))))) seen.add('D|' + Math.round(din)); } }
       const lines = [];
       (adds.get(m) || []).forEach(a => { const key = Math.round(Math.abs(a.out || a.inn)) + '|' + norm(a.text), dk = a.dep ? 'D|' + Math.round(Math.abs(a.inn)) : ''; if (seen.has(key) || (dk && seen.has(dk))) { rep.dup++; return; } seen.add(key); if (dk) seen.add(dk); lines.push({ k: 'd', a }); rep.added++; });
+      const pl = [];
       if (m === tm) {
         const g = work.filter(w => w.st === 'gyeol'), p = work.filter(w => w.st === 'pum');
-        g.forEach(w => lines.push({ k: 'g', a: w })); if (g.length && p.length) lines.push({ k: 'b' }, { k: 'b' }); p.forEach(w => lines.push({ k: 'p', a: w }));
+        g.forEach(w => pl.push({ k: 'g', a: w })); if (g.length && p.length) pl.push({ k: 'b' }); p.forEach(w => pl.push({ k: 'p', a: w }));
         rep.gy = g.length; rep.pum = p.length;
       }
       const cap = b.end - lk;
@@ -5338,8 +5390,7 @@ const XP = (function(){
         const R = b.end, tpl = sh.rows.get(R - 1) || sh.rows.get(R);
         insertRows(sh, R, need, tpl, cashNm); rep.ins += need;
         // 이 블록 아래 칸 주소·다른 시트·이름 옮기기
-        blocks.forEach((x, i) => { if (i >= m) { x.start += need; x.end += need; x.wol += need; x.nu += need; x.prevNu += need; } });
-        b.end += need; b.wol += need; b.nu += need;
+        shiftBlocks(R, need);
         mod.set('shift', (mod.get('shift') || []).concat([[R, need]]));
         lk = lastKeepOf();
       }
@@ -5348,7 +5399,8 @@ const XP = (function(){
       const tplSt = new Map(); tc.forEach((c, i) => { if (c.s) tplSt.set(i, c.s); });
       // 비어 있는 I·J 칸 서식은 다른 줄에서 빌림
       for (let r = b.start; r <= b.end && (!tplSt.has(cardCol) || !tplSt.has(stCol)); r++) { const c = rd(r); [cardCol, stCol].forEach(i => { if (!tplSt.has(i) && c.get(i) && c.get(i).s) tplSt.set(i, c.get(i).s); }); }
-      const emptyB = lk < b.start, refRow = emptyB ? b.prevNu : lk;
+      const emptyB = lk < b.start; let refRow = lk;
+      if (emptyB) { refRow = b.prevNu || 0; for (let r = b.scan0; r < b.start; r++) if (sh.rows.has(r) && rowInfo(r).keep) refRow = r; }
       let prevH = (() => { const c = refRow ? rd(refRow).get(M.bal) : null; const v = c ? val(c, sst) : ''; return typeof v === 'number' ? v : null; })();
       // 쓰기
       let r = lk + 1;
@@ -5358,16 +5410,28 @@ const XP = (function(){
         if (ln.k === 'd') {
           const a = ln.a; e.set(M.mon, { v: a.m }); if (a.d) e.set(M.day, { v: a.d }); if (a.label) e.set(M.label, { v: a.label }); e.set(M.text, { v: a.text });
           if (M.inn >= 0 && a.inn) e.set(M.inn, { v: a.inn }); if (a.out) e.set(M.out, { v: a.out });
-          const L = colNm(M.bal), pr = (r === b.start && emptyB && b.prevNu) ? b.prevNu : r - 1, fo = a.inn ? L + pr + '+' + colNm(M.inn) + r + '-' + colNm(M.out) + r : L + pr + '-' + colNm(M.out) + r;
+          const L = colNm(M.bal), pr = (r === b.start && emptyB && refRow) ? refRow : r - 1, fo = a.inn ? L + pr + '+' + colNm(M.inn) + r + '-' + colNm(M.out) + r : L + pr + '-' + colNm(M.out) + r;
           prevH = prevH == null ? null : prevH + (a.inn || 0) - (a.out || 0); e.set(M.bal, { f: fo, v: prevH });
           if (a.card) { e.set(cardCol, { v: '법카' }); if (a.parts && a.parts.length) e.set(stCol, { v: a.parts.join('+') }); }
-        } else if (ln.k === 'g' || ln.k === 'p') {
-          const a = ln.a; if (a.label) e.set(M.label, { v: a.label }); e.set(M.text, { v: a.text }); if (a.out) e.set(M.out, { v: a.out });
-          if (a.card) e.set(cardCol, { v: '법카' }); e.set(stCol, { v: ln.k === 'g' ? '결재중' : '품의만' });
         }
         sh.rows.set(r, writeRow(sh.rows.get(r), r, e, tplSt)); r++;
       }
-      for (; r <= b.end; r++) { if (!sh.rows.has(r)) continue; if (!rowInfo(r).st) continue; const e = new Map(); for (let i = 0; i <= Math.max(stCol, cardCol, M.bal, M.out); i++) e.set(i, { clear: true }); sh.rows.set(r, writeRow(sh.rows.get(r), r, e, null)); }
+      // 결재중·품의만: 합계 범위 아래로 빈 줄 하나 띄우고 「월 계」 바로 위에 적음 → 월계·누계·월말결산에 안 들어감
+      if (pl.length) {
+        const aS = b.tail + 2, need = aS + pl.length - b.wol;
+        if (need > 0) {
+          const R = b.wol, tpl = sh.rows.get(b.end) || sh.rows.get(b.start);
+          insertRows(sh, R, need, tpl, cashNm); rep.ins += need;
+          shiftBlocks(R, need);
+          mod.set('shift', (mod.get('shift') || []).concat([[R, need]]));
+        }
+        let r2 = aS;
+        for (const ln of pl) {
+          const e = new Map(); for (let i = 0; i <= Math.max(stCol, cardCol, M.bal, M.out); i++) e.set(i, { clear: true });
+          if (ln.k !== 'b') { const a = ln.a; if (a.label) e.set(M.label, { v: a.label }); e.set(M.text, { v: a.text }); if (a.out) e.set(M.out, { v: a.out }); if (a.card) e.set(cardCol, { v: '법카' }); e.set(stCol, { v: ln.k === 'g' ? '결재중' : '품의만' }); }
+          sh.rows.set(r2, writeRow(sh.rows.get(r2) || '<row r="' + r2 + '"></row>', r2, e, tplSt)); r2++;
+        }
+      }
     }
     const out = new Map(); out.set(cf, joinSheet(sh));
     /* 줄이 늘었으면 다른 곳 주소도 옮김 */
@@ -5638,10 +5702,12 @@ async function xpExport(p){
     const be = await xpBudEdits(rec.u8, fs.bsrc, fs.ov, rec.applied), out = await XP.build(rec.u8, Object.assign({}, fs.spec, { bud: be }));
     const name = xpName(rec.name), saved = await saveBytes(name, out.u8), R = out.rep;
     if (saved !== false) { const ap = {}; fs.ov.forEach(o => { if (o.chu && Object.keys(o.chu).length) ap[o.label] = o.chu; }); await xbPut(p, { name, at: new Date().toISOString(), u8: out.u8, ids: fs.ids, chain: (rec.chain || 0) + 1, last: todayS(), applied: ap }); }
-    let m = FSHORT[p] + (rec.chain ? '(직전 갱신본 기준)' : '') + ': 이번에 새로 넣은 지출 완료 ' + R.added + '건' + (R.dup ? '(이미 있던 ' + R.dup + '건 제외)' : '') + ' · 결재중 ' + R.gy + '건 · 품의만 ' + R.pum + '건을 ' + R.month + '월 칸에 넣었습니다';
+    let m = FSHORT[p] + (rec.chain ? '(직전 갱신본 기준)' : '') + ': 이번에 새로 넣은 지출 완료 ' + R.added + '건' + (R.dup ? '(이미 있던 ' + R.dup + '건 제외)' : '') + (R.gy || R.pum ? ' · 결재중 ' + R.gy + '건 · 품의만 ' + R.pum + '건은 ' + R.month + '월 「월 계」 바로 위에 참고로 적었습니다(합계·월말결산에는 안 들어감)' : '');
     if (R.ins) m += ' (엑셀 칸이 모자라 ' + R.ins + '줄 늘림)';
     if (R.bud.length) m += ' · 월말결산 예산 ' + R.bud.length + '건 반영(당초·추경 칸에 나눠 넣고 총예산은 합계 수식 유지)';
     if (R.eFix) m += ' · 총예산 합계 수식 ' + R.eFix + '칸 복구';
+    if (R.dupFixed && R.dupFixed.length) m += ' · 같은 지출이 두 번 들어 있던 줄을 지웠습니다: ' + R.dupFixed.slice(0, 3).map(x => x.m + '월 ' + (x.label ? x.label + ' ' : '') + fmt(x.amt) + '원 (' + x.rows.join('·') + '행)').join(', ') + (R.dupFixed.length > 3 ? ' 외 ' + (R.dupFixed.length - 3) + '건' : '');
+    if (R.dupRows && R.dupRows.length) m +=' · ⚠ 같은 지출이 엑셀에 두 번 들어 있습니다: ' + R.dupRows.slice(0, 3).map(x => x.m + '월 ' + (x.label ? x.label + ' ' : '') + fmt(x.amt) + '원 (' + x.rows.join('·') + '행)').join(', ') + (R.dupRows.length > 3 ? ' 외 ' + (R.dupRows.length - 3) + '건' : '') + ' — 엑셀에서 남는 줄을 지운 뒤, 다음 마감 때 「내가 고친 엑셀로 바꾸기」로 그 파일을 골라 주세요';
     if (be.miss.length || R.warn.length) m += ' · 예산 ' + (be.miss.length + R.warn.length) + '건은 엑셀에서 직접 고치세요';
     { const pi = poolInfo(p), d = rsDiff(pi); if (pi && d) m += ' · ⚠ 연구용역비 총합이 ' + fmt(pi.total) + '원보다 ' + fmt(Math.abs(d)) + '원 ' + (d > 0 ? '적습니다' : '많습니다') + ' — 과제별 현황 → 예산 조정의 「차이 맞추기」를 누른 뒤 다시 받으세요'; }
     return { ok: true, msg: m, name };
