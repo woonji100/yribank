@@ -450,7 +450,7 @@ body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd
   <section class="kpis" aria-label="전체 요약" style="margin-bottom:0">
     <div class="kpi"><div class="l">예산액</div><div class="v" id="k-bud">–</div><div class="s" id="k-bud-s">당초 + 추경</div></div>
     <div class="kpi"><div class="l">집행합계</div><div class="v" id="k-spent">–</div><div class="s" id="k-spent-s">원본 장부 + 입력분</div></div>
-    <div class="kpi"><div class="l">집행잔액</div><div class="v" id="k-rem">–</div><div class="s" id="k-rem-s">예산 − 집행합계</div></div>
+    <div class="kpi"><div class="l" id="k-rem-l">집행잔액</div><div class="v" id="k-rem">–</div><div class="s" id="k-rem-s">예산 − 집행합계</div></div>
     <div class="kpi"><div class="l">집행률</div><div class="v" id="k-rate">–</div><div class="meter"><b id="k-meter" style="width:0%"></b></div></div>
   </section>
 
@@ -1365,7 +1365,8 @@ function snapBuild(){
   }));
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v3.3', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears() };
+  const bank = { y: YR }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); }));
+  return { v: 3, at: new Date().toISOString(), ver: 'v3.4', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank };
 }
 function snapText(){ return '/* 통장 가계부 현황 자료 — 「현황 보기」 파일이 읽는 자료입니다. 직접 고치지 마세요. */\nwindow.__CCG_SNAP=' + JSON.stringify(snapBuild()) + ';\n'; }
 let shT = null;
@@ -1495,13 +1496,13 @@ function renderSh(){
   pn.innerHTML = h;
 }
 function viewApply(sn){
-  VIEWAT = sn.at || '';
+  VIEWAT = sn.at || ''; VBANK = sn.bank || null;
   S.allE = (sn.entries || []).slice(); S.allR = (sn.rules || []).slice(); S.budgets = (sn.budgets || []).slice();
   S.etc = []; S.days = []; S.etcp = []; S.etat = [];
   splitParts(); buildCtx(); S.loaded.e = S.loaded.r = S.loaded.b = true;
   BM = budMap(); Store.emit();
 }
-let VIEWAT = '', VIEWBASE = '', vBusy = false;
+let VIEWAT = '', VIEWBASE = '', vBusy = false, VBANK = null;
 async function viewRefresh(){
   if (vBusy) return; vBusy = true;
   try {
@@ -1812,9 +1813,9 @@ function renderTop(){
   $('#k-spent').textContent = fmt(sp);
   $('#k-bud-s').textContent = PART === 'se' ? YR + '년 입금(예수) 합계' : YR + '년도 예산';
   $('#k-spent-s').textContent = PART === 'se' ? '입력한 출금(납부) 합계' : t.s9 || t.inp ? '원본 장부 ' + short(t.s9) + ' + 입력 ' + fmt(t.inp) : '원본 장부 + 입력분';
-  $('#k-rem').textContent = fmt(t.bud - sp);
-  $('#k-rem').classList.toggle('neg', t.bud - sp < 0);
-  { const el = $('#k-rem-s'); if (el) { const bb = PART === 'se' ? null : bookBalance(); el.textContent = PART === 'se' ? '예산 − 집행합계' : bb ? '예산 − 집행합계 · 통장 잔액은 ' + fmt(bb.bal) : '예산 − 집행합계'; } }
+  { const bk = bankNow(PART), rv = bk != null ? bk : t.bud - sp;
+    $('#k-rem').textContent = fmt(rv); $('#k-rem').classList.toggle('neg', rv < 0);
+    const l = $('#k-rem-l'), el = $('#k-rem-s'); if (l) l.textContent = bk != null ? '잔액' : '집행잔액'; if (el) el.textContent = bk != null ? '통장 잔액' : '예산 − 집행합계'; }
   const rt = t.bud ? sp / t.bud : 0;
   $('#k-rate').textContent = (rt * 100).toFixed(1) + '%';
   $('#k-meter').style.width = Math.min(100, rt * 100) + '%';
@@ -2085,11 +2086,11 @@ async function saveXlsx(name, sheets){
 /* ───────── 예산표 ───────── */
 const open = new Set();
 const ico = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1l5 4-5 4z" fill="currentColor"/></svg>';
-function budCells(n){
-  const sp = spent(n), rem = n.bud - sp, rt = n.bud ? sp / n.bud : (sp ? 9.99 : 0), over = n.bud > 0 ? sp > n.bud : sp > 0;
+function budCells(n, bk){
+  const sp = spent(n), rem = bk != null ? bk : n.bud - sp, rt = n.bud ? sp / n.bud : (sp ? 9.99 : 0), over = n.bud > 0 ? sp > n.bud : sp > 0;
   const pc = n.bud ? (rt * 100).toFixed(1) + '%' : (sp ? '예산없음' : '–');
   return '<td class="num">' + (n.bud ? fmt(n.bud) : '–') + '</td><td class="num">' + (n.s9 ? fmt(n.s9) : '–') + '</td><td class="num">' + (n.inp ? fmt(n.inp) : '–') + '</td>' +
-    '<td class="num">' + (sp ? fmt(sp) : '–') + '</td><td class="num' + (rem < 0 ? ' neg' : '') + '">' + (n.bud || sp ? fmt(rem) : '–') + '</td>' +
+    '<td class="num">' + (sp ? fmt(sp) : '–') + '</td><td class="num' + (rem < 0 ? ' neg' : '') + '">' + (n.bud || sp || bk != null ? fmt(rem) : '–') + (bk != null ? '<span class="sub2">통장 잔액</span>' : '') + '</td>' +
     '<td><div class="rate' + (over ? ' over' : '') + '"><span class="bar"><b style="width:' + Math.min(100, rt * 100) + '%"></b></span><span class="pc num">' + pc + (over && n.bud ? ' ⚠' : '') + '</span></div></td>';
 }
 function renderBudget(){
@@ -2118,7 +2119,7 @@ function renderBudget(){
     $('#b-info').textContent = '';
   }
   const t = agg.tot;
-  h += '<tr class="tfoot"><td>합계</td>' + budCells(t) + '</tr>';
+  h += '<tr class="tfoot"><td>합계</td>' + budCells(t, bankNow(PART)) + '</tr>';
   body.innerHTML = h;
 }
 
@@ -3974,7 +3975,7 @@ function fundStat(p){
     agg.dae.forEach(d => dae.push({ name: d.name, bud: d.bud, sp: d.s9 + d.inp }));
     const yr = S.entries.filter(e => entryYear(e) === YR);
     return { p, ok: DATA.master.length > 0, bud: t.bud, base: t.s9, inp: t.inp, sp: t.s9 + t.inp, mm: t.mm.slice(), n: yr.length, unc: agg.uncN, cards: yr.filter(e => e.pay === 'card').length + (BASEY === YR ? (DATA.cash || []).filter(x => x[6] && x[6].length).length : 0),
-      wp: S.work.filter(e => e.st === 'pum').length, wg: S.work.filter(e => e.st === 'gyeol').length, wsum: S.work.reduce((a, e) => a + (Number(e.a) || 0), 0), cut: CUT, file: DATA.src && DATA.src.file, at: DATA.src && DATA.src.at, dae };
+      wp: S.work.filter(e => e.st === 'pum').length, wg: S.work.filter(e => e.st === 'gyeol').length, wsum: S.work.reduce((a, e) => a + (Number(e.a) || 0), 0), cut: CUT, file: DATA.src && DATA.src.file, at: DATA.src && DATA.src.at, dae, bank: bankNow(p) };
   });
 }
 let ALLC = null;
@@ -3982,18 +3983,18 @@ function renderAll(){
   const st = FUND3.map(fundStat); ALLC = st;
   const ok = st.filter(x => x.ok), T = { bud: 0, base: 0, inp: 0, sp: 0, w: 0, mm: Z13() };
   ok.forEach(x => { T.w += x.wsum; T.bud += x.bud; T.base += x.base; T.inp += x.inp; T.sp += x.sp; for (let k = 0; k < 13; k++) T.mm[k] += x.mm[k]; });
-  const rem = T.bud - T.sp, rt = T.bud ? T.sp / T.bud : 0;
+  const remOf = x => x.bank != null ? x.bank : x.bud - x.sp, rem = ok.reduce((a, x) => a + remOf(x), 0), rt = T.bud ? T.sp / T.bud : 0, nBk = ok.filter(x => x.bank != null).length;
   let h = '<section class="kpis" aria-label="전체 요약">' +
     '<div class="kpi"><div class="l">예산액 합계</div><div class="v">' + fmt(T.bud) + '</div><div class="s">' + YR + '년 · ' + ok.length + '개 기금</div></div>' +
     '<div class="kpi"><div class="l">집행합계</div><div class="v">' + fmt(T.sp) + '</div><div class="s">원본 장부 ' + short(T.base) + ' + 입력 ' + fmt(T.inp) + '</div></div>' +
-    '<div class="kpi"><div class="l">집행잔액</div><div class="v' + (rem < 0 ? ' neg' : '') + '">' + fmt(rem) + '</div><div class="s">예산 − 집행합계</div></div>' +
+    '<div class="kpi"><div class="l">' + (nBk ? '잔액' : '집행잔액') + '</div><div class="v' + (rem < 0 ? ' neg' : '') + '">' + fmt(rem) + '</div><div class="s">' + (!nBk ? '예산 − 집행합계' : nBk === ok.length ? '통장 잔액 합계' : '통장 잔액 (엑셀 잔액이 없는 기금은 예산 − 집행)') + '</div></div>' +
     '<div class="kpi"><div class="l">집행률</div><div class="v">' + (rt * 100).toFixed(1) + '%</div><div class="meter"><b style="width:' + Math.min(100, rt * 100) + '%"></b></div></div></section>';
   h += '<h2 class="sec-h ovsec">기금별 예산 · 집행 · 잔액</h2><p class="sec-p">줄을 누르거나 위의 통장 버튼을 누르면 그 통장의 예산 항목별 현황으로 들어갑니다.</p>';
-  h += '<div class="tw"><table><thead><tr><th>기금</th><th class="r">예산액</th><th class="r">원본 장부</th><th class="r">입력분</th><th class="r">집행합계</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중<span class="sub2">품의·결재중</span></th><th class="r">입력 건수</th></tr></thead><tbody>';
+  h += '<div class="tw"><table><thead><tr><th>기금</th><th class="r">예산액</th><th class="r">원본 장부</th><th class="r">입력분</th><th class="r">집행합계</th><th class="r">' + (nBk ? '잔액' : '집행잔액') + '</th><th class="r">집행률</th><th class="r pv">진행중<span class="sub2">품의·결재중</span></th><th class="r">입력 건수</th></tr></thead><tbody>';
   st.forEach(x => {
     if (!x.ok) { h += '<tr class="fund-row fund-none" data-go="' + x.p + '"><td><b>' + esc(FTITLE[x.p]) + '</b></td><td colspan="' + (VIEW ? 7 : 8) + '">엑셀을 아직 불러오지 않았습니다 — 관리 → 설정에서 불러오세요</td></tr>'; return; }
     h += '<tr class="fund-row" data-go="' + x.p + '"><td><b>' + esc(FTITLE[x.p]) + '</b>' + (VIEW ? '' : '<span class="sub2">' + (x.file ? esc(x.file) + ' · ' : '') + '1~' + x.cut + '월 반영</span>') + '</td>' +
-      '<td class="num">' + fmt(x.bud) + '</td><td class="num">' + fmt(x.base) + '</td><td class="num">' + fmt(x.inp) + '</td><td class="num">' + fmt(x.sp) + '</td><td class="num' + (x.bud - x.sp < 0 ? ' neg' : '') + '">' + fmt(x.bud - x.sp) + '</td>' + rateCell(x.sp, x.bud) +
+      '<td class="num">' + fmt(x.bud) + '</td><td class="num">' + fmt(x.base) + '</td><td class="num">' + fmt(x.inp) + '</td><td class="num">' + fmt(x.sp) + '</td><td class="num' + (remOf(x) < 0 ? ' neg' : '') + '">' + fmt(remOf(x)) + (x.bank != null ? '<span class="sub2">통장 잔액</span>' : '') + '</td>' + rateCell(x.sp, x.bud) +
       '<td class="num pv">' + (x.wp + x.wg ? fmt(x.wsum) + '<span class="sub2">품의 ' + x.wp + ' · 결재중 ' + x.wg + '</span>' : '–') + '</td><td class="num">' + fmt(x.n) + (x.unc && !VIEW ? ' <span class="neg">· 미분류 ' + x.unc + '</span>' : '') + (x.cards ? ' <span class="chip cd">카드 ' + x.cards + '</span>' : '') + '</td></tr>';
   });
   h += '<tr><td><b>합계</b></td><td class="num"><b>' + fmt(T.bud) + '</b></td><td class="num"><b>' + fmt(T.base) + '</b></td><td class="num"><b>' + fmt(T.inp) + '</b></td><td class="num"><b>' + fmt(T.sp) + '</b></td><td class="num"><b>' + fmt(rem) + '</b></td>' + rateCell(T.sp, T.bud) + '<td class="num pv"><b>' + fmt(T.w) + '</b></td><td></td></tr></tbody></table></div>';
@@ -4015,10 +4016,10 @@ function renderAll(){
 }
 function exportAll(){
   if (!ALLC) return;
-  const st = ALLC, rows = [['기금', YR + '년 예산액', '원본 장부', '입력분', '집행합계', '집행잔액', '집행률', '입력 건수', '법인카드 건수', '엑셀 반영 월', '진행중(품의·결재중)'].map(H)];
-  let tb = 0, ts = 0;
-  st.forEach(x => { if (!x.ok) { rows.push([FTITLE[x.p], '(엑셀 미반영)']); return; } tb += x.bud; ts += x.sp; rows.push([FTITLE[x.p], N(x.bud), N(x.base), N(x.inp), N(x.sp), N(x.bud - x.sp), PC(x.bud ? x.sp / x.bud : 0), N(x.n), N(x.cards), '1~' + x.cut + '월', N(x.wsum)]); });
-  rows.push([TB('합계'), TN(tb), '', '', TN(ts), TN(tb - ts), PC(tb ? ts / tb : 0)]);
+  const st = ALLC, anyBk = st.some(x => x.ok && x.bank != null), rows = [['기금', YR + '년 예산액', '원본 장부', '입력분', '집행합계', anyBk ? '잔액(통장)' : '집행잔액', '집행률', '입력 건수', '법인카드 건수', '엑셀 반영 월', '진행중(품의·결재중)'].map(H)];
+  let tb = 0, ts = 0, tr = 0;
+  st.forEach(x => { if (!x.ok) { rows.push([FTITLE[x.p], '(엑셀 미반영)']); return; } const rv = x.bank != null ? x.bank : x.bud - x.sp; tb += x.bud; ts += x.sp; tr += rv; rows.push([FTITLE[x.p], N(x.bud), N(x.base), N(x.inp), N(x.sp), N(rv), PC(x.bud ? x.sp / x.bud : 0), N(x.n), N(x.cards), '1~' + x.cut + '월', N(x.wsum)]); });
+  rows.push([TB('합계'), TN(tb), '', '', TN(ts), TN(tr), PC(tb ? ts / tb : 0)]);
   const mon = [['월'].concat(st.map(x => FTITLE[x.p]), ['합계']).map(H)];
   for (let m = 1; m <= 12; m++) { const vs = st.map(x => x.ok ? x.mm[m] : 0); mon.push([m + '월'].concat(vs.map(N), [N(vs.reduce((a, b) => a + b, 0))])); }
   const dae = [['기금', '대분류', '예산액', '집행합계', '집행잔액', '집행률'].map(H)];
@@ -4350,6 +4351,12 @@ async function wkBulkDone(){
     const r = await Store.update(it.id, patch); if (r === false) break; sum += Number(it.a) || 0;
   } } finally { undoEnd(); }
   toast('지출 완료 ' + ok.length + '건 · ' + fmt(sum) + '원' + (no ? ' — 금액 없는 ' + no + '건은 그대로 둠' : ''));
+}
+function bankNow(p){
+  if (FUND3.indexOf(p) < 0) return null;
+  if (VIEW) { const b = VBANK; return b && b.y === YR && typeof b[p] === 'number' ? b[p] : null; }
+  if (YR !== BASEY) return null;
+  const bb = bookBalance(); return bb ? bb.bal : null;
 }
 function bookBalance(){
   const src = DATA.src && DATA.src.cash; if (!src || !src.map || !(src.map.bal >= 0) || !src.rows) return null;
@@ -6783,7 +6790,7 @@ function wire(){
   $('#b-csv').addEventListener('click', () => {
     const rows = [['대분류', '중분류', '소분류', YR + '년 예산', '원본 장부(1~' + CUT + '월)', '입력분', '집행합계', '집행잔액', '집행률'].map(H)];
     agg.dae.forEach(d => d.kids.forEach(j => j.kids.forEach(l => { const sp = spent(l); rows.push([d.name, j.name, l.name, N(l.bud), N(l.s9), N(l.inp), N(sp), N(l.bud - sp), l.bud ? PC(sp / l.bud) : '']); })));
-    const t = agg.tot, sp = spent(t); rows.push([TB('합계'), '', '', TN(t.bud), TN(t.s9), TN(t.inp), TN(sp), TN(t.bud - sp), t.bud ? PC(sp / t.bud) : '']);
+    const t = agg.tot, sp = spent(t), bk = bankNow(PART); rows.push([TB(bk != null ? '합계 (잔액은 통장 잔액)' : '합계'), '', '', TN(t.bud), TN(t.s9), TN(t.inp), TN(sp), TN(bk != null ? bk : t.bud - sp), t.bud ? PC(sp / t.bud) : '']);
     saveXlsx(fx() + '_분류별예산_' + YR + '.xlsx', [{ name: '분류별 예산표', freeze: 1, widths: [16, 18, 34, 15, 15, 14, 15, 15, 10], rows }]);
   });
   $('#c-bud').addEventListener('click', () => { CH.basis = 'bud'; CH.dae = CH.jung = null; renderCharts(); });
