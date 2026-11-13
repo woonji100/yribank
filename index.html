@@ -326,7 +326,18 @@ body.setup .tabs.main, body.setup .tabs.fundbar, body.setup #av-bar, body.setup 
 details.more-g{margin-top:22px}
 details.more-g > summary{cursor:pointer;color:var(--ink2);font-weight:500;padding:8px 0}
 #app{display:none} body.unlocked #app{display:block}
-body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd-undo,body.viewer #hd-guide,body.viewer #hd-lock,body.viewer #hd-nav [data-nav="admin"],body.viewer #pj-m-edit,body.viewer #pj-m-view,body.viewer #pj-edit-go,body.viewer #all-xl,body.viewer #o-recent,body.viewer [data-unc],body.viewer #gbanner,body.viewer #sh-chip,body.viewer .vhide,body.viewer .pv{display:none!important}
+body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd-undo,body.viewer #hd-guide,body.viewer #hd-lock,body.viewer #hd-nav [data-nav="admin"],body.viewer #pj-m-edit,body.viewer #pj-m-view,body.viewer #pj-edit-go,body.viewer #all-xl,body.viewer #o-recent,body.viewer [data-unc],body.viewer #gbanner,body.viewer #sh-chip,body.viewer .vhide,body.viewer .pv{display:none!important}
+.mgcard{border:1.5px solid var(--accent);background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--surface)}
+.mg-h{display:flex;gap:12px;align-items:center}
+.mg-ic{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--accent-ink);flex:none}
+.mg-t{font-size:16px;font-weight:700;margin-bottom:2px}
+.mg-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn.mg-b{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;height:auto;padding:10px 18px;gap:3px;min-width:160px;text-align:left}
+.btn.mg-b b{display:inline-flex;align-items:center;gap:7px;font-size:14.5px}
+.btn.mg-b small{font-size:12px;opacity:.9;font-weight:400}
+.btn.mgx{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+@keyframes mgflash{0%{box-shadow:0 0 0 0 var(--accent)}100%{box-shadow:0 0 0 16px rgba(0,0,0,0)}}
+.mgcard.flash{animation:mgflash .9s ease-out 2}
 #sh-chip.ok{border-color:var(--s3)} #sh-chip.warn{border-color:var(--s4);color:var(--s4)}
 .sh-box code{background:var(--zebra);padding:1px 5px;border-radius:4px;font-size:12px} .sh-box ul{margin:6px 0 6px 18px;padding:0} .sh-box li{margin:2px 0}
 .lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -383,6 +394,7 @@ body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd
       <button class="btn sm" id="hd-undo" disabled title="되돌릴 작업이 없습니다">↶ 되돌리기</button>
       <button class="btn sm" id="hd-guide">사용 안내</button>
       <button class="btn sm" id="hd-lock" title="자리를 비울 때 누르세요. 다시 열려면 비밀번호가 필요합니다">잠그기</button>
+      <button class="btn sm primary mgx" id="hd-mg" hidden title="담당자가 업무 마감 때 만든 집행현황 엑셀을 받습니다"></button>
     </div>
   </header>
 
@@ -462,7 +474,7 @@ body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd
       <button class="btn sm" id="b-open">모두 펼치기</button>
       <button class="btn sm" id="b-close">모두 접기</button>
       <button class="btn sm" id="b-csv">엑셀로 내려받기</button>
-      <button class="btn sm" id="b-mg" hidden>마감 엑셀 받기</button>
+      <button class="btn sm primary mgx" id="b-mg" hidden></button>
       <span class="muted" id="b-info"></span>
     </div>
     <div class="tw"><table>
@@ -1380,7 +1392,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v4.0', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v4.1', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
 }
 function closeMeta(){
   const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
@@ -1607,13 +1619,26 @@ function renderSh(){
   pn.innerHTML = h;
 }
 function viewApply(sn){
-  VIEWAT = sn.at || ''; VBANK = sn.bank || null; VCLOSE = sn.close || null;
+  VIEWAT = sn.at || ''; VBANK = sn.bank || null; VCLOSE = sn.close || null; mgHead();
   S.allE = (sn.entries || []).slice(); S.allR = (sn.rules || []).slice(); S.budgets = (sn.budgets || []).slice();
   S.etc = []; S.days = []; S.etcp = []; S.etat = [];
   splitParts(); buildCtx(); S.loaded.e = S.loaded.r = S.loaded.b = true;
   BM = budMap(); Store.emit();
 }
 let VIEWAT = '', VIEWBASE = '', vBusy = false, VBANK = null, VCLOSE = null, vcBusy = false;
+const dlIco = sz => '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>';
+/* 마감 날짜: 파일 이름의 마지막 「11.12」 꼴(→ 11.12. 마감), 없으면 올린 날(→ 11.13. 올림) */
+function mgDate(c){
+  const all = Array.from(String(c && c.name || '').matchAll(/(\d{1,2})\.(\d{2})/g));
+  if (all.length) { const m = all[all.length - 1]; return { d: Number(m[1]) + '.' + m[2] + '.', nm: true }; }
+  const t = new Date(c && c.at); return { d: isNaN(t) ? '' : (t.getMonth() + 1) + '.' + String(t.getDate()).padStart(2, '0') + '.', nm: false };
+}
+const mgWhen = (c, inBtn) => { const x = mgDate(c); return x.d ? x.d + (x.nm ? (inBtn ? '' : ' 마감') : ' 올림') : ''; };
+function mgHead(){
+  const b = $('#hd-mg'); if (!b) return;
+  const on = VIEW && VGH && VCLOSE && FUND3.some(p => VCLOSE[p] && VCLOSE[p].name);
+  b.hidden = !on; if (on) b.innerHTML = dlIco(15) + '마감 엑셀 받기';
+}
 /* 팀원 화면: 담당자가 업무 마감 때 올린 집행현황 엑셀 받기 (공유 비밀번호로 풀어서 그대로 저장) */
 async function vCloseGet(p){
   const m = VCLOSE && VCLOSE[p]; if (!m || vcBusy) return;
@@ -2250,7 +2275,7 @@ function renderBudget(){
   const t = agg.tot;
   h += '<tr class="tfoot"><td>합계</td>' + budCells(t, bankNow(PART)) + '</tr>';
   body.innerHTML = h;
-  { const mg = $('#b-mg'); if (mg) { const c = VIEW && VGH && VCLOSE && VCLOSE[PART]; mg.hidden = !c; mg.title = c ? c.name + ' (' + vstamp(c.at) + ' 올림)' : ''; } }
+  { const mg = $('#b-mg'); if (mg) { const c = VIEW && VGH && VCLOSE && VCLOSE[PART]; mg.hidden = !c; mg.title = c ? c.name + ' (' + vstamp(c.at) + ' 올림)' : ''; mg.innerHTML = c ? dlIco(14) + '마감 엑셀 받기' + (mgWhen(c, true) ? ' · ' + esc(mgWhen(c, true)) : '') : ''; } }
 }
 
 /* ───────── 항목별 지출 내역 (예산 항목을 누르면 열림 · 팀원 보기 화면에서도 같음) ───────── */
@@ -4119,8 +4144,8 @@ function renderAll(){
     '<div class="kpi"><div class="l">집행합계</div><div class="v">' + fmt(T.sp) + '</div><div class="s">지출 완료 기준</div></div>' +
     '<div class="kpi"><div class="l">' + (nBk ? '잔액' : '집행잔액') + '</div><div class="v' + (rem < 0 ? ' neg' : '') + '">' + fmt(rem) + '</div><div class="s">' + esc(!nBk ? '예산 − 집행합계' : (nBk === ok.length ? '' : '엑셀 잔액이 없는 기금은 예산 − 집행 ') + bankSub({ amt: ok.reduce((a, x) => a + (x.dep ? x.dep.amt : 0), 0) }, ok.reduce((a, x) => a + (x.bank != null ? x.gap || 0 : 0), 0))) + '</div></div>' +
     '<div class="kpi"><div class="l">집행률</div><div class="v">' + (rt * 100).toFixed(1) + '%</div><div class="meter"><b style="width:' + Math.min(100, rt * 100) + '%"></b></div></div></section>';
-  if (VIEW && VGH && VCLOSE) { const ps = FUND3.filter(p => VCLOSE[p] && VCLOSE[p].name); if (ps.length) h += '<section class="card box" id="v-close" style="margin:12px 0 4px"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline"><b>마감 엑셀 받기</b><span class="muted" style="font-size:12.5px">담당자가 업무 마감 때 만든 집행현황 엑셀입니다. 마감한 때 기준이라 지금 화면 숫자와 다를 수 있습니다.</span></div>' +
-    ps.map(p => '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><button class="btn sm" data-vclose="' + p + '">' + esc(FSHORT[p]) + ' 받기</button><span class="ink2">' + esc(VCLOSE[p].name) + '</span><span class="muted" style="font-size:12.5px">' + esc(vstamp(VCLOSE[p].at)) + ' 올림</span></div>').join('') + '</section>'; }
+  if (VIEW && VGH && VCLOSE) { const ps = FUND3.filter(p => VCLOSE[p] && VCLOSE[p].name); if (ps.length) h += '<section class="card box mgcard" id="v-close" style="margin:14px 0 6px"><div class="mg-h"><span class="mg-ic">' + dlIco(20) + '</span><div><div class="mg-t">마감 엑셀 받기</div><div class="ink2" style="font-size:13px">담당자가 업무 마감 때 만든 집행현황 엑셀(월말결산·현금출납 등 시트 전체)입니다. 마감한 때 기준이라 지금 화면 숫자와 다를 수 있습니다.</div></div></div><div class="mg-btns">' +
+    ps.map(p => '<button class="btn primary mg-b" data-vclose="' + p + '" title="' + esc(VCLOSE[p].name) + ' (' + esc(vstamp(VCLOSE[p].at)) + ' 올림)"><b>' + dlIco(16) + esc(FSHORT[p]) + '</b><small>' + esc(mgWhen(VCLOSE[p])) + '</small></button>').join('') + '</div></section>'; }
   h += '<h2 class="sec-h ovsec">기금별 예산 · 집행 · 잔액</h2><p class="sec-p">줄을 누르거나 위의 통장 버튼을 누르면 그 통장의 예산 항목별 현황으로 들어갑니다.</p>';
   h += '<div class="tw"><table><thead><tr><th>기금</th><th class="r">예산액</th><th class="r">집행합계</th><th class="r">' + (nBk ? '잔액' : '집행잔액') + '</th><th class="r">집행률</th><th class="r pv">진행중<span class="sub2">품의·결재중</span></th><th class="r vhide">입력 건수</th></tr></thead><tbody>';
   st.forEach(x => {
@@ -6954,6 +6979,11 @@ function wire(){
     const k = b.dataset.t; if (open.has(k)) open.delete(k); else open.add(k); renderBudget();
   });
   $('#b-mg').addEventListener('click', () => vCloseGet(PART));
+  $('#hd-mg').addEventListener('click', () => {
+    if (tab !== 'all') setTab('all');
+    let n = 0; const go = () => { const c = $('#v-close'); if (c) { c.scrollIntoView({ behavior: 'smooth', block: 'center' }); c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); } else if (n++ < 15) setTimeout(go, 100); };
+    setTimeout(go, 60);
+  });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-vclose]'); if (b) vCloseGet(b.dataset.vclose); });
   $('#sh-panel').addEventListener('click', e => { const b = e.target.closest('[data-sh]'); if (!b) return; const k = b.dataset.sh; if (k.indexOf('cup:') === 0) ghCloseUpload(k.slice(4)); else if (k.indexOf('cdel:') === 0) ghCloseDel(k.slice(5)); });
   $('#b-csv').addEventListener('click', () => {
