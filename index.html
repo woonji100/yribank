@@ -2,17 +2,18 @@
 .wk-sub{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:12px}.wk-sub .chip{cursor:pointer;font-size:12px}.wk-acts{display:flex;flex-direction:column;gap:6px;min-width:112px}.wk-acts>.btn{width:100%}.wk-sec{display:flex;gap:4px}.wk-sec .btn{flex:1;padding-left:6px;padding-right:6px;color:var(--ink2,#555)}
 </style></head><body>
 <title>예산 집행 현황</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
 <style>
 /* Layout: 한 장짜리 업무 도구. 상단 요약 띠 → 탭(장부 / 예산표 / 그래프 / 분류 설정). 숫자는 장부처럼 모노 서체로 정렬. */
 :root{
-  --bg:#f6f6f3; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
-  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.10); --zebra:rgba(11,11,11,.028);
-  --accent:#2a78d6; --accent-ink:#ffffff; --accent-soft:rgba(42,120,214,.10);
+  --bg:#f1f4f8; --surface:#ffffff; --ink:#0f1b2d; --ink2:#4a5568; --muted:#5f6b7a;
+  --grid:#e3e8f0; --axis:#c9d3e0; --hair:rgba(15,27,45,.10); --zebra:rgba(15,27,45,.03);
+  --accent:#2563eb; --accent-ink:#ffffff; --accent-soft:rgba(37,99,235,.10);
+  --f-chul:#16a34a; --f-iwol:#f97316; --f-su:#7c3aed; --hot:#dc2626; --hot-ink:#b91c1c; --hot-soft:#fee2e2;
   --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --other:#aeada6;
   --crit:#d03b3b; --crit-soft:rgba(208,59,59,.10); --good:#006300; --warn:#8a5a00; --warn-soft:rgba(250,178,25,.20);
-  --font:'IBM Plex Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;
-  --mono:'IBM Plex Mono','D2Coding',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --font:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;
+  --mono:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -21,6 +22,7 @@
     --accent:#3987e5; --accent-ink:#0b0b0b; --accent-soft:rgba(57,135,229,.16);
     --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --other:#6b6a66;
     --crit:#e66767; --crit-soft:rgba(230,103,103,.14); --good:#0ca30c; --warn:#f0b740; --warn-soft:rgba(250,178,25,.16);
+    --f-chul:#22c55e; --f-iwol:#fb923c; --f-su:#a78bfa; --hot:#ef4444; --hot-ink:#f87171; --hot-soft:rgba(239,68,68,.16);
     color-scheme:dark;
   }
 }
@@ -30,6 +32,7 @@
   --accent:#3987e5; --accent-ink:#0b0b0b; --accent-soft:rgba(57,135,229,.16);
   --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --other:#6b6a66;
   --crit:#e66767; --crit-soft:rgba(230,103,103,.14); --good:#0ca30c; --warn:#f0b740; --warn-soft:rgba(250,178,25,.16);
+  --f-chul:#22c55e; --f-iwol:#fb923c; --f-su:#a78bfa; --hot:#ef4444; --hot-ink:#f87171; --hot-soft:rgba(239,68,68,.16);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -71,7 +74,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .panel[hidden]{display:none}
 
 /* shared controls */
-.card{background:var(--surface);border:1px solid var(--hair);border-radius:8px}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:14px;box-shadow:0 1px 2px rgba(15,27,45,.05),0 6px 20px rgba(15,27,45,.04)}
 .field{height:36px;padding:0 10px;border:1px solid var(--axis);border-radius:6px;background:var(--surface);min-width:0}
 .field::placeholder{color:var(--muted)}
 .btn{height:36px;padding:0 14px;border:1px solid var(--axis);border-radius:6px;background:var(--surface);cursor:pointer;font-weight:500;white-space:nowrap}
@@ -198,10 +201,71 @@ tr.lv1 td:first-child{padding-left:26px}
 .tg svg{width:10px;height:10px;transition:transform .12s}
 .tg[aria-expanded="true"] svg{transform:rotate(90deg)}
 .rate{display:flex;align-items:center;gap:8px;justify-content:flex-end;min-width:128px}
-.rate .bar{flex:0 0 58px;height:6px;border-radius:3px;background:var(--grid);overflow:hidden}
-.rate .bar b{display:block;height:100%;background:var(--accent)}
+.rate .bar{flex:0 0 80px;height:8px;border-radius:999px;background:var(--grid);overflow:hidden}
+.rate .bar b{display:block;height:100%;border-radius:999px;background:var(--fc,var(--accent))}
 .rate .pc{width:46px;text-align:right}
 .rate.over .bar b{background:var(--crit)} .rate.over .pc{color:var(--crit);font-weight:600}
+.rate.hot .bar b{background:var(--hot)} .rate.hot .pc{color:var(--hot-ink);font-weight:700}
+/* B안 화면: 원그래프 · 통장/실 카드 · 거의 다 쓴 분류 · 접는 과제 구분 */
+.c-chul{--fc:var(--f-chul)} .c-iwol{--fc:var(--f-iwol)} .c-su{--fc:var(--f-su)}
+#p-overview[data-fp="chul"]{--fc:var(--f-chul)} #p-overview[data-fp="iwol"]{--fc:var(--f-iwol)} #p-overview[data-fp="su"]{--fc:var(--f-su)}
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:20px 32px;padding:22px 26px;margin-bottom:16px}
+.ring{position:relative;width:148px;height:148px;border-radius:50%;flex:none;background:conic-gradient(var(--fc,var(--accent)) 0 var(--p,0%),var(--grid) var(--p,0%) 100%)}
+.ring-in{position:absolute;inset:16px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-v{font-size:28px;font-weight:800;line-height:1.15;color:var(--rcv,var(--ink));font-variant-numeric:tabular-nums}
+.ring-l{font-size:12px;color:var(--ink2)}
+.hero-stats{flex:1 1 460px;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+.hero-stats .l{font-size:13px;color:var(--ink2)}
+.hero-stats .v{margin-top:4px;font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hero-stats .v small{font-size:14px;font-weight:500;color:var(--ink2)}
+.hero-stats .s{margin-top:2px;font-size:12.5px;color:var(--muted)}
+.btn.bigb{height:48px;padding:0 20px;border-radius:12px;font-size:15px}
+.fcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-bottom:16px}
+.fcard{display:flex;flex-direction:column;gap:12px;padding:20px 22px;border-top:5px solid var(--fc,var(--accent))}
+.fcard.sel{outline:2px solid var(--fc,var(--accent));outline-offset:-2px}
+.fc-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.fc-name{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0;border:0;background:none;color:var(--ink);font:inherit;font-size:16px;font-weight:700;cursor:pointer;text-align:left}
+.fc-name .sub{font-size:12.5px;font-weight:400;color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--fc,var(--accent));flex:none}
+.fc-rate{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.fc-rate.hot{color:var(--hot-ink)}
+.fbar{display:block;height:10px;border-radius:999px;background:var(--grid);overflow:hidden}
+.fbar b{display:block;height:100%;border-radius:999px;background:var(--fc,var(--accent))}
+.fbar.hot b{background:var(--hot)}
+.fc-rows{display:flex;flex-direction:column;gap:5px;font-size:14px}
+.fc-rows > div{display:flex;justify-content:space-between;gap:10px}
+.fc-rows > div > span{color:var(--ink2)} .fc-rows b{font-weight:500;font-variant-numeric:tabular-nums}
+.fc-rows .em > span{color:var(--ink);font-weight:700} .fc-rows .em b{font-weight:700}
+.fc-note{justify-content:flex-end!important;font-size:12.5px;color:var(--muted)}
+.fc-extra{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--ink2)}
+.fc-acts{margin-top:auto;display:flex;gap:8px}
+.fc-acts .btn{flex:1;height:44px;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:16px}
+.hotchip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:var(--hot-soft);color:var(--hot-ink);font-size:13px;font-weight:700;white-space:nowrap}
+.hlist > div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--hair)}
+.hlist > div:last-child{border-bottom:0}
+.hsub{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.dlist{display:flex;flex-direction:column;gap:10px;font-size:13.5px}
+.dlist > div{display:grid;grid-template-columns:minmax(0,130px) minmax(0,1fr) 56px;align-items:center;gap:10px}
+.dlist .pc{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.dlist .hot .pc{color:var(--hot-ink)}
+.ftabs{display:flex;flex-wrap:wrap;gap:4px;padding:3px;border-radius:999px;background:var(--grid)}
+.ftabs button{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--ink2);font:inherit;font-size:12.5px;cursor:pointer}
+.ftabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(15,27,45,.12)}
+.kgrp{border-top:1px solid var(--hair)}
+.kgrp > button{width:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;min-height:54px;padding:10px 6px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:14.5px;text-align:left;cursor:pointer}
+.kgrp > button:hover{background:var(--zebra)}
+.kgrp .chev{transition:transform .15s} .kgrp.open .chev{transform:rotate(90deg)}
+.kgrp .ks{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font-size:13.5px;color:var(--ink2)} .kgrp .ks b{color:var(--ink);font-variant-numeric:tabular-nums}
+.kgrp .kbar{display:inline-flex;align-items:center;gap:8px;width:170px}
+.kgrp .kbar .hotx{color:var(--hot-ink)}
+.kgrp .tw > table{table-layout:fixed;width:100%} .kgrp .tw > table > thead > tr > th:first-child{width:34%}
+#o-alert .lk{border-radius:999px;border-color:transparent;background:var(--hot-soft);color:var(--hot-ink);padding:5px 12px}
+#o-alert .lk .num{color:var(--hot-ink);font-weight:700}
+#av-bar [data-av="chul"]::before,#av-bar [data-av="iwol"]::before,#av-bar [data-av="su"]::before,#part-seg [data-part="chul"]::before,#part-seg [data-part="iwol"]::before,#part-seg [data-part="su"]::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+#av-bar [data-av="chul"]::before,#part-seg [data-part="chul"]::before{background:var(--f-chul)}
+#av-bar [data-av="iwol"]::before,#part-seg [data-part="iwol"]::before{background:var(--f-iwol)}
+#av-bar [data-av="su"]::before,#part-seg [data-part="su"]::before{background:var(--f-su)}
 tr.tfoot td{font-weight:700;background:var(--surface);border-top:1px solid var(--axis)}
 .neg{color:var(--crit)}
 .path-s{display:block;font-size:11.5px;color:var(--muted)}
@@ -459,11 +523,15 @@ body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,b
 
   <!-- ② 현황 -->
   <section class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-status" hidden>
-  <section class="kpis" aria-label="전체 요약" style="margin-bottom:0">
-    <div class="kpi"><div class="l">예산액</div><div class="v" id="k-bud">–</div><div class="s" id="k-bud-s">당초 + 추경</div></div>
-    <div class="kpi"><div class="l">집행합계</div><div class="v" id="k-spent">–</div><div class="s" id="k-spent-s">지출 완료 기준</div></div>
-    <div class="kpi"><div class="l" id="k-rem-l">집행잔액</div><div class="v" id="k-rem">–</div><div class="s" id="k-rem-s">예산 − 집행합계</div></div>
-    <div class="kpi"><div class="l">집행률</div><div class="v" id="k-rate">–</div><div class="meter"><b id="k-meter" style="width:0%"></b></div></div>
+  <section class="card hero" id="o-hero" aria-label="통장 요약">
+    <div class="ring" id="o-ring" role="img" aria-label="집행률"><div class="ring-in"><span class="ring-v" id="k-rate">–</span><span class="ring-l" id="o-ring-l">집행률</span></div></div>
+    <div class="hero-stats">
+      <div><div class="l">예산액</div><div class="v" id="k-bud">–</div><div class="s" id="k-bud-s">당초 + 추경</div></div>
+      <div><div class="l">집행합계</div><div class="v" id="k-spent">–</div><div class="s" id="k-spent-s">지출 완료 기준</div></div>
+      <div><div class="l" id="k-rem-l">집행잔액</div><div class="v" id="k-rem">–</div><div class="s" id="k-rem-s">예산 − 집행합계</div></div>
+    </div>
+    <button class="btn primary mgx bigb" id="b-mg" hidden></button>
+    <b id="k-meter" hidden></b>
   </section>
 
     <details class="card box alert al" id="o-alert-card" hidden><summary><h2 class="sec-h" id="o-alert-h">확인할 항목</h2> <span class="muted">— 예산 초과·거의 다 쓴 항목</span></summary><div id="o-alert" style="margin-top:10px"></div></details>
@@ -474,7 +542,6 @@ body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,b
       <button class="btn sm" id="b-open">모두 펼치기</button>
       <button class="btn sm" id="b-close">모두 접기</button>
       <button class="btn sm" id="b-csv">엑셀로 내려받기</button>
-      <button class="btn sm primary mgx" id="b-mg" hidden></button>
       <span class="muted" id="b-info"></span>
     </div>
     <div class="tw"><table>
@@ -1392,7 +1459,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v4.1', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v5.0', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
 }
 function closeMeta(){
   const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
@@ -1634,8 +1701,14 @@ function mgDate(c){
   const t = new Date(c && c.at); return { d: isNaN(t) ? '' : (t.getMonth() + 1) + '.' + String(t.getDate()).padStart(2, '0') + '.', nm: false };
 }
 const mgWhen = (c, inBtn) => { const x = mgDate(c); return x.d ? x.d + (x.nm ? (inBtn ? '' : ' 마감') : ' 올림') : ''; };
+const SVG_CHEV = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const SVG_CHEV_C = SVG_CHEV.replace('<svg ', '<svg class="chev" ');
+const SVG_DOWN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+const isHot = (sp, bud) => bud > 0 ? sp / bud >= 0.95 : sp > 0;
+const pjNm = n => String(n || '').replace(/^\s*\([^)]*\)\s*/, '') || String(n || '');
 function mgHead(){
   const b = $('#hd-mg'); if (!b) return;
+  b.hidden = true; return;
   const on = VIEW && VGH && VCLOSE && FUND3.some(p => VCLOSE[p] && VCLOSE[p].name);
   b.hidden = !on; if (on) b.innerHTML = dlIco(15) + '마감 엑셀 받기';
 }
@@ -1962,16 +2035,17 @@ function renderFs(){
 }
 function renderTop(){
   const t = agg.tot, sp = t.s9 + t.inp;
-  $('#k-bud').textContent = fmt(t.bud);
-  $('#k-spent').textContent = fmt(sp);
+  $('#k-bud').innerHTML = fmt(t.bud) + '<small> 원</small>';
+  $('#k-spent').innerHTML = fmt(sp) + '<small> 원</small>';
   $('#k-bud-s').textContent = PART === 'se' ? YR + '년 입금(예수) 합계' : YR + '년도 예산';
   $('#k-spent-s').textContent = PART === 'se' ? '입력한 출금(납부) 합계' : '지출 완료 기준';
   { const bk = bankNow(PART), rv = bk != null ? bk : t.bud - sp;
-    $('#k-rem').textContent = fmt(rv); $('#k-rem').classList.toggle('neg', rv < 0);
+    $('#k-rem').innerHTML = fmt(rv) + '<small> 원</small>'; $('#k-rem').classList.toggle('neg', rv < 0);
     const l = $('#k-rem-l'), el = $('#k-rem-s'); if (l) l.textContent = bk != null ? '잔액' : '집행잔액'; if (el) { const dp = bk != null ? depoNow(PART) : null, g = bk != null ? gapNow(PART, t.bud, sp) : 0; el.innerHTML = bk != null ? esc(bankSub(dp, g)) : '예산 − 집행합계'; } }
   const rt = t.bud ? sp / t.bud : 0;
   $('#k-rate').textContent = (rt * 100).toFixed(1) + '%';
   $('#k-meter').style.width = Math.min(100, rt * 100) + '%';
+  { const rg = $('#o-ring'), ov = $('#p-overview'), rl = $('#o-ring-l'); if (ov) ov.dataset.fp = PART; if (rg) { rg.style.setProperty('--p', Math.min(100, rt * 100).toFixed(1) + '%'); rg.setAttribute('aria-label', (FSHORT[PART] || '') + ' 집행률 ' + (rt * 100).toFixed(1) + '%'); } if (rl) rl.textContent = PART === 'se' ? '납부율' : (FSHORT[PART] || '') + ' 집행률'; }
   const p = $('#store-pill');
   const ready = S.loaded.e && S.loaded.r && S.loaded.b;
   p.className = 'pill ' + ((S.mode === 'db' && ready) || (S.mode === 'file' && !FS.err) || S.mode === 'view' ? 'ok' : S.mode === 'local' || FS.err ? 'warn' : '');
@@ -2240,11 +2314,11 @@ async function saveXlsx(name, sheets){
 const open = new Set();
 const ico = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1l5 4-5 4z" fill="currentColor"/></svg>';
 function budCells(n, bk){
-  const sp = spent(n), rem = bk != null ? bk : n.bud - sp, rt = n.bud ? sp / n.bud : (sp ? 9.99 : 0), over = n.bud > 0 ? sp > n.bud : sp > 0;
+  const sp = spent(n), rem = bk != null ? bk : n.bud - sp, rt = n.bud ? sp / n.bud : (sp ? 9.99 : 0), over = n.bud > 0 ? sp > n.bud : sp > 0, hot = PART !== 'se' && n.bud > 0 && sp / n.bud >= 0.95;
   const pc = n.bud ? (rt * 100).toFixed(1) + '%' : (sp ? '예산없음' : '–');
   return '<td class="num">' + (n.bud ? fmt(n.bud) : '–') + '</td>' +
     '<td class="num">' + (sp ? fmt(sp) : '–') + '</td><td class="num' + (rem < 0 ? ' neg' : '') + '">' + (n.bud || sp || bk != null ? fmt(rem) : '–') + (bk != null ? (t => t ? '<span class="sub2">' + esc(t) + '</span>' : '')(bankSub(depoNow(PART), gapNow(PART, n.bud, sp))) : '') + '</td>' +
-    '<td><div class="rate' + (over ? ' over' : '') + '"><span class="bar"><b style="width:' + Math.min(100, rt * 100) + '%"></b></span><span class="pc num">' + pc + (over && n.bud ? ' ⚠' : '') + '</span></div></td>';
+    '<td><div class="rate' + (over ? ' over' : '') + (hot ? ' hot' : '') + '"><span class="bar"><b style="width:' + Math.min(100, rt * 100) + '%"></b></span><span class="pc num">' + pc + (over && n.bud ? ' ⚠' : '') + '</span></div></td>';
 }
 function renderBudget(){
   const q = norm($('#b-q').value), body = $('#b-body');
@@ -2580,9 +2654,9 @@ function nodesAt(level){
   return out;
 }
 function rateCell(sp, bud){
-  const rt = bud ? sp / bud : (sp ? 9.99 : 0), over = bud > 0 ? sp > bud : sp > 0;
+  const rt = bud ? sp / bud : (sp ? 9.99 : 0), over = bud > 0 ? sp > bud : sp > 0, hot = bud > 0 && sp / bud >= 0.95;
   const pc = bud ? (rt * 100).toFixed(1) + '%' : (sp ? '예산없음' : '–');
-  return '<td><div class="rate' + (over ? ' over' : '') + '"><span class="bar"><b style="width:' + Math.min(100, rt * 100) + '%"></b></span><span class="pc num">' + pc + (over && bud ? ' ⚠' : '') + '</span></div></td>';
+  return '<td><div class="rate' + (over ? ' over' : '') + (hot ? ' hot' : '') + '"><span class="bar"><b style="width:' + Math.min(100, rt * 100) + '%"></b></span><span class="pc num">' + pc + (over && bud ? ' ⚠' : '') + '</span></div></td>';
 }
 function renderPeriod(){
   const f = $('#pr-from'), t = $('#pr-to');
@@ -4117,6 +4191,7 @@ function renderNoFund(){
 
 /* ───────── 전체 현황: 기금 3개를 한 화면에서 ───────── */
 const FUND3 = ['chul', 'iwol', 'su'];
+const FCOL = { chul: 'c-chul', iwol: 'c-iwol', su: 'c-su' };
 const FSHORT = { chul: '출연금', iwol: '이월출연금', su: '수탁과제', se: '세입세출외현금' }, fx = () => FSHORT[PART] || '출연금';
 function useFund(p){ PART = p; applyFund(p); BASE = p === 'se' ? SE_BASE : CHUL_BASE; INCOME = p === 'se' ? [] : CHUL_INCOME; splitParts(); buildCtx(); }
 function withFund(p, fn){
@@ -4133,42 +4208,43 @@ function fundStat(p){
       wp: S.work.filter(e => e.st === 'pum').length, wg: S.work.filter(e => e.st === 'gyeol').length, wsum: S.work.reduce((a, e) => a + (Number(e.a) || 0), 0), cut: CUT, file: DATA.src && DATA.src.file, at: DATA.src && DATA.src.at, dae, bank: bankNow(p), dep: depoNow(p), gap: gapNow(p, t.bud, t.s9 + t.inp) };
   });
 }
-let ALLC = null;
+let ALLC = null, ALLD = 'chul';
 function renderAll(){
   const st = FUND3.map(fundStat); ALLC = st;
-  const ok = st.filter(x => x.ok), T = { bud: 0, base: 0, inp: 0, sp: 0, w: 0, mm: Z13() };
-  ok.forEach(x => { T.w += x.wsum; T.bud += x.bud; T.base += x.base; T.inp += x.inp; T.sp += x.sp; for (let k = 0; k < 13; k++) T.mm[k] += x.mm[k]; });
+  const ok = st.filter(x => x.ok), T = { bud: 0, sp: 0, w: 0 };
+  ok.forEach(x => { T.w += x.wsum; T.bud += x.bud; T.sp += x.sp; });
   const remOf = x => x.bank != null ? x.bank : x.bud - x.sp, rem = ok.reduce((a, x) => a + remOf(x), 0), rt = T.bud ? T.sp / T.bud : 0, nBk = ok.filter(x => x.bank != null).length;
-  let h = '<section class="kpis" aria-label="전체 요약">' +
-    '<div class="kpi"><div class="l">예산액 합계</div><div class="v">' + fmt(T.bud) + '</div><div class="s">' + YR + '년 · ' + ok.length + '개 기금</div></div>' +
-    '<div class="kpi"><div class="l">집행합계</div><div class="v">' + fmt(T.sp) + '</div><div class="s">지출 완료 기준</div></div>' +
-    '<div class="kpi"><div class="l">' + (nBk ? '잔액' : '집행잔액') + '</div><div class="v' + (rem < 0 ? ' neg' : '') + '">' + fmt(rem) + '</div><div class="s">' + esc(!nBk ? '예산 − 집행합계' : (nBk === ok.length ? '' : '엑셀 잔액이 없는 기금은 예산 − 집행 ') + bankSub({ amt: ok.reduce((a, x) => a + (x.dep ? x.dep.amt : 0), 0) }, ok.reduce((a, x) => a + (x.bank != null ? x.gap || 0 : 0), 0))) + '</div></div>' +
-    '<div class="kpi"><div class="l">집행률</div><div class="v">' + (rt * 100).toFixed(1) + '%</div><div class="meter"><b style="width:' + Math.min(100, rt * 100) + '%"></b></div></div></section>';
-  if (VIEW && VGH && VCLOSE) { const ps = FUND3.filter(p => VCLOSE[p] && VCLOSE[p].name); if (ps.length) h += '<section class="card box mgcard" id="v-close" style="margin:14px 0 6px"><div class="mg-h"><span class="mg-ic">' + dlIco(20) + '</span><div><div class="mg-t">마감 엑셀 받기</div><div class="ink2" style="font-size:13px">담당자가 업무 마감 때 만든 집행현황 엑셀(월말결산·현금출납 등 시트 전체)입니다. 마감한 때 기준이라 지금 화면 숫자와 다를 수 있습니다.</div></div></div><div class="mg-btns">' +
-    ps.map(p => '<button class="btn primary mg-b" data-vclose="' + p + '" title="' + esc(VCLOSE[p].name) + ' (' + esc(vstamp(VCLOSE[p].at)) + ' 올림)"><b>' + dlIco(16) + esc(FSHORT[p]) + '</b><small>' + esc(mgWhen(VCLOSE[p])) + '</small></button>').join('') + '</div></section>'; }
-  h += '<h2 class="sec-h ovsec">기금별 예산 · 집행 · 잔액</h2><p class="sec-p">줄을 누르거나 위의 통장 버튼을 누르면 그 통장의 예산 항목별 현황으로 들어갑니다.</p>';
-  h += '<div class="tw"><table><thead><tr><th>기금</th><th class="r">예산액</th><th class="r">집행합계</th><th class="r">' + (nBk ? '잔액' : '집행잔액') + '</th><th class="r">집행률</th><th class="r pv">진행중<span class="sub2">품의·결재중</span></th><th class="r vhide">입력 건수</th></tr></thead><tbody>';
+  const pc = v => (v * 100).toFixed(1) + '%', wd = v => Math.min(100, v * 100).toFixed(1) + '%';
+  let h = '<section class="card hero" aria-label="전체 요약"><div class="ring" style="--p:' + wd(rt) + ';--rcv:var(--accent)" role="img" aria-label="전체 집행률 ' + pc(rt) + '"><div class="ring-in"><span class="ring-v">' + pc(rt) + '</span><span class="ring-l">전체 집행률</span></div></div>' +
+    '<div class="hero-stats">' +
+    '<div><div class="l">예산액</div><div class="v">' + fmt(T.bud) + '<small> 원</small></div><div class="s">' + YR + '년 · ' + ok.length + '개 통장 합계</div></div>' +
+    '<div><div class="l">집행합계</div><div class="v">' + fmt(T.sp) + '<small> 원</small></div><div class="s">지출 완료 기준</div></div>' +
+    '<div><div class="l">' + (nBk ? '잔액 (통장)' : '집행잔액') + '</div><div class="v' + (rem < 0 ? ' neg' : '') + '">' + fmt(rem) + '<small> 원</small></div><div class="s">' + esc(!nBk ? '예산 − 집행합계' : (nBk === ok.length ? '' : '엑셀 잔액이 없는 통장은 예산 − 집행 ') + bankSub({ amt: ok.reduce((a, x) => a + (x.dep ? x.dep.amt : 0), 0) }, ok.reduce((a, x) => a + (x.bank != null ? x.gap || 0 : 0), 0))) + '</div></div>' +
+    (VIEW ? '' : '<div class="pv"><div class="l">진행중</div><div class="v">' + fmt(T.w) + '<small> 원</small></div><div class="s">품의·결재중 (집행에 안 들어감)</div></div>') +
+    '</div></section>';
+  h += '<section class="fcards" aria-label="통장별">';
   st.forEach(x => {
-    if (!x.ok) { h += '<tr class="fund-row fund-none" data-go="' + x.p + '"><td><b>' + esc(FTITLE[x.p]) + '</b></td><td colspan="' + (VIEW ? 4 : 6) + '">엑셀을 아직 불러오지 않았습니다 — 관리 → 설정에서 불러오세요</td></tr>'; return; }
-    h += '<tr class="fund-row" data-go="' + x.p + '"><td><b>' + esc(FTITLE[x.p]) + '</b></td>' +
-      '<td class="num">' + fmt(x.bud) + '</td><td class="num">' + fmt(x.sp) + '</td><td class="num' + (remOf(x) < 0 ? ' neg' : '') + '">' + fmt(remOf(x)) + (x.bank != null && bankSub(x.dep, x.gap) ? '<span class="sub2">' + esc(bankSub(x.dep, x.gap)) + '</span>' : '') + '</td>' + rateCell(x.sp, x.bud) +
-      '<td class="num pv">' + (x.wp + x.wg ? fmt(x.wsum) + '<span class="sub2">품의 ' + x.wp + ' · 결재중 ' + x.wg + '</span>' : '–') + '</td><td class="num vhide">' + fmt(x.n) + (x.unc && !VIEW ? ' <span class="neg">· 미분류 ' + x.unc + '</span>' : '') + (x.cards ? ' <span class="chip cd">카드 ' + x.cards + '</span>' : '') + '</td></tr>';
+    const nm = FSHORT[x.p], m = /\((.+)\)/.exec(FTITLE[x.p] || ''), sub = m ? m[1] : '', cls = FCOL[x.p] || '';
+    if (!x.ok) { h += '<article class="card fcard ' + cls + '"><div class="fc-h"><button class="fc-name" data-go="' + x.p + '"><span class="dot"></span>' + esc(nm) + '</button></div><p class="sec-p">엑셀을 아직 불러오지 않았습니다' + (VIEW ? '' : ' — 관리 → 설정에서 불러오세요') + '</p></article>'; return; }
+    const r = x.bud ? x.sp / x.bud : 0, hot = isHot(x.sp, x.bud), rv = remOf(x), note = x.bank != null ? bankSub(x.dep, x.gap) : '', mg = VIEW && VGH && VCLOSE && VCLOSE[x.p];
+    h += '<article class="card fcard ' + cls + '"><div class="fc-h"><button class="fc-name" data-go="' + x.p + '" aria-label="' + esc(nm) + ' 통장 현황 보기"><span class="dot"></span>' + esc(nm) + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') + SVG_CHEV + '</button><span class="fc-rate' + (hot ? ' hot' : '') + '">' + pc(r) + '</span></div>' +
+      '<div class="fbar' + (hot ? ' hot' : '') + '"><b style="width:' + wd(r) + '"></b></div>' +
+      '<div class="fc-rows"><div><span>예산</span><b>' + fmt(x.bud) + '</b></div><div><span>집행</span><b>' + fmt(x.sp) + '</b></div><div class="em"><span>' + (x.bank != null ? '잔액' : '집행잔액') + '</span><b class="' + (rv < 0 ? 'neg' : '') + '">' + fmt(rv) + '</b></div>' + (note ? '<div class="fc-note">' + esc(note) + '</div>' : '') + '</div>' +
+      (VIEW ? '' : '<div class="fc-extra">' + (x.wp + x.wg ? '<span>진행중 ' + fmt(x.wsum) + ' (품의 ' + x.wp + ' · 결재중 ' + x.wg + ')</span>' : '<span>진행중 없음</span>') + '<span>입력 ' + fmt(x.n) + '건' + (x.cards ? ' · 카드 ' + x.cards : '') + '</span>' + (x.unc ? '<span class="neg">미분류 ' + x.unc + '건</span>' : '') + '</div>') +
+      '<div class="fc-acts"><button class="btn" data-go="' + x.p + '">현황 보기' + SVG_CHEV + '</button>' + (mg ? '<button class="btn primary" data-vclose="' + x.p + '" title="' + esc(mg.name) + ' (' + esc(vstamp(mg.at)) + ' 올림)">' + dlIco(15) + '마감 엑셀 · ' + esc(mgWhen(mg, true)) + '</button>' : '') + '</div></article>';
   });
-  h += '<tr><td><b>합계</b></td><td class="num"><b>' + fmt(T.bud) + '</b></td><td class="num"><b>' + fmt(T.sp) + '</b></td><td class="num"><b>' + fmt(rem) + '</b></td>' + rateCell(T.sp, T.bud) + '<td class="num pv"><b>' + fmt(T.w) + '</b></td><td class="vhide"></td></tr></tbody></table></div>';
-  h += '<h2 class="sec-h ovsec" style="margin-top:22px">월별 집행</h2><div class="tw"><table><thead><tr><th>월</th>' + st.map(x => '<th class="r">' + esc(FTITLE[x.p].replace(/\(.*\)/, '')) + '</th>').join('') + '<th class="r">합계</th></tr></thead><tbody>';
-  for (let m = 1; m <= 12; m++) {
-    const vs = st.map(x => x.ok ? x.mm[m] : 0), sum = vs.reduce((a, b) => a + b, 0);
-    if (!sum && m > 10) continue;
-    h += '<tr><td>' + m + '월</td>' + vs.map(v => '<td class="num">' + (v ? fmt(v) : '–') + '</td>').join('') + '<td class="num"><b>' + (sum ? fmt(sum) : '–') + '</b></td></tr>';
-  }
-  h += '<tr><td><b>합계</b></td>' + st.map(x => '<td class="num"><b>' + fmt(x.ok ? x.sp : 0) + '</b></td>').join('') + '<td class="num"><b>' + fmt(T.sp) + '</b></td></tr></tbody></table></div>';
-  h += '<h2 class="sec-h ovsec" style="margin-top:22px">대분류별</h2>';
-  st.forEach(x => {
-    if (!x.ok) return;
-    h += '<details class="card box" style="margin-bottom:10px"><summary><b>' + esc(FTITLE[x.p]) + '</b> <span class="muted">— 예산 ' + fmt(x.bud) + ' · 집행 ' + fmt(x.sp) + '</span></summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>대분류</th><th class="r">예산액</th><th class="r">집행합계</th><th class="r">집행잔액</th><th class="r">집행률</th></tr></thead><tbody>' +
-      x.dae.map(d => '<tr><td>' + esc(d.name) + '</td><td class="num">' + fmt(d.bud) + '</td><td class="num">' + fmt(d.sp) + '</td><td class="num' + (d.bud - d.sp < 0 ? ' neg' : '') + '">' + fmt(d.bud - d.sp) + '</td>' + rateCell(d.sp, d.bud) + '</tr>').join('') + '</tbody></table></div></details>';
-  });
-  h += '<div class="row" style="margin-top:14px"><button class="btn primary" id="all-xl">전체 현황 엑셀로 내려받기</button></div>';
+  h += '</section>';
+  const hots = []; ok.forEach(x => x.dae.forEach(d => { if (isHot(d.sp, d.bud)) hots.push({ p: x.p, d }); }));
+  hots.sort((a, b) => (b.d.bud ? b.d.sp / b.d.bud : 99) - (a.d.bud ? a.d.sp / a.d.bud : 99));
+  if (!ok.some(x => x.p === ALLD)) ALLD = ok.length ? ok[0].p : 'chul';
+  const sel = ok.find(x => x.p === ALLD), dl = sel ? sel.dae.filter(d => d.bud > 0 || d.sp > 0).sort((a, b) => b.bud - a.bud) : [];
+  h += '<section class="two">' +
+    '<article class="card box"><h2 class="sec-h" style="font-size:17px">거의 다 쓴 분류</h2><p class="sec-p" style="margin-bottom:4px">대분류 집행률 95% 이상 · 빨간색은 거의 다 썼거나 넘은 것</p>' +
+    (hots.length ? '<div class="hlist">' + hots.slice(0, 8).map(o => '<div><div><b>' + esc(o.d.name) + '</b><div class="hsub ' + (FCOL[o.p] || '') + '"><span class="dot" style="width:8px;height:8px"></span>' + esc(FSHORT[o.p]) + ' · ' + fmt(o.d.sp) + ' / ' + fmt(o.d.bud) + '</div></div><span class="hotchip">' + (o.d.bud ? pc(o.d.sp / o.d.bud) : '예산없음') + '</span></div>').join('') + '</div>' + (hots.length > 8 ? '<p class="muted" style="margin-top:6px">외 ' + (hots.length - 8) + '개</p>' : '') : '<p class="muted" style="margin-top:8px">95% 이상 쓴 분류가 없습니다.</p>') + '</article>' +
+    '<article class="card box"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px"><h2 class="sec-h" style="font-size:17px;margin:0">대분류별 집행률</h2><div class="ftabs" role="group" aria-label="통장 고르기">' +
+    ok.map(x => '<button type="button" class="' + (FCOL[x.p] || '') + '" data-alld="' + x.p + '" aria-pressed="' + (x.p === ALLD) + '"><span class="dot" style="width:8px;height:8px"></span>' + esc(FSHORT[x.p]) + '</button>').join('') + '</div></div>' +
+    '<div class="dlist ' + (FCOL[ALLD] || '') + '">' + (dl.length ? dl.map(d => { const r = d.bud ? d.sp / d.bud : 0, hot = isHot(d.sp, d.bud); return '<div class="' + (hot ? 'hot' : '') + '"><span>' + esc(d.name) + '</span><span class="fbar' + (hot ? ' hot' : '') + '" style="height:8px"><b style="width:' + wd(r) + '"></b></span><span class="pc">' + (d.bud ? pc(r) : '예산없음') + '</span></div>'; }).join('') : '<p class="muted">대분류가 없습니다.</p>') + '</div></article></section>';
+  if (!VIEW) h += '<div class="row" style="margin-top:4px"><button class="btn primary" id="all-xl">전체 현황 엑셀로 내려받기</button></div>';
   $('#all-body').innerHTML = h;
 }
 function exportAll(){
@@ -4186,7 +4262,7 @@ function exportAll(){
 
 
 /* ───────── 과제별: 실 → 과제구분 → 과제 (연구과제별 집행현황 시트의 구조 + 세 기금 장부의 실시간 집행) ───────── */
-const PJ = { room: '', kind: '', q: '', open: new Set(), mode: 'view', pool: {} };
+const PJ = { room: '', kind: '', q: '', open: new Set(), mode: 'view', pool: {}, sel: '', kopen: new Set() };
 const PCATS = ['인건비', '회의비', '여비', '수용비', '조사비'];
 const projCat = label => { const m = /(인건비|회의비|여비|수용비|조사비)\s*$/.exec(label || ''); return m ? m[1] : ''; };
 function projKeyOfLabel(label){
@@ -4228,34 +4304,56 @@ function renderProj(){
   }
   $('#pj-bar').hidden = false;
   $('#pj-m-view').setAttribute('aria-pressed', String(PJ.mode === 'view')); $('#pj-m-edit').setAttribute('aria-pressed', String(PJ.mode === 'edit'));
+  if (PJ.mode === 'view') PJ.room = ''; { const rs = $('#pj-room'); if (rs) rs.hidden = PJ.mode === 'view'; }
   const R = projRows(), rooms = Array.from(new Set(R.rows.map(r => r.x.room))), kinds = Array.from(new Set(R.rows.map(r => r.x.kind)));
   const fillSel = (id, first, arr, cur) => { const el = $(id); el.innerHTML = '<option value="">' + first + '</option>' + arr.map(v => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(v) + '</option>').join(''); };
   fillSel('#pj-room', '전체 실', rooms, PJ.room); fillSel('#pj-kind', '전체 과제 구분', kinds, PJ.kind);
   if (PJ.mode === 'edit') { $('#pj-top').innerHTML = ''; box.innerHTML = renderPjEdit(R); return; }
-  const T = sumR(R.vis), rest = T.bud - T.sp;
-  $('#pj-top').innerHTML = '<section class="kpis" aria-label="과제 요약"><div class="kpi"><div class="l">과제 예산액</div><div class="v">' + fmt(T.bud) + '</div><div class="s">' + YR + '년 · 과제 ' + T.n + '개' + (PJ.room || PJ.kind || PJ.q ? ' (필터 적용)' : '') + '</div></div>' +
-    '<div class="kpi"><div class="l">집행액</div><div class="v">' + fmt(T.sp) + '</div><div class="s">출연금·이월·수탁 장부 합산</div></div>' +
-    '<div class="kpi"><div class="l">집행잔액</div><div class="v' + (rest < 0 ? ' neg' : '') + '">' + fmt(rest) + '</div><div class="s">예산 − 집행</div></div>' +
-    '<div class="kpi"><div class="l">집행률</div><div class="v">' + (T.bud ? (T.sp / T.bud * 100).toFixed(1) : '0.0') + '%</div>' + (VIEW ? '<div class="s">집행액 ÷ 예산액</div>' : '<div class="s">진행중(품의·결재중) ' + fmt(T.pend) + '원</div>') + '</div></section>';
-  const roomOf = r => r.x.room;
-  let h = '<h2 class="sec-h ovsec">실별 요약</h2><div class="tw"><table><thead><tr><th>실</th><th class="r">과제 수</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
-  rooms.forEach(rm => { const l = R.vis.filter(r => roomOf(r) === rm); if (!l.length) return; const t = sumR(l); h += '<tr class="fund-row" data-pjroom="' + esc(rm) + '"><td style="white-space:nowrap"><b>' + esc(rm) + '</b></td><td class="num">' + t.n + '</td><td class="num">' + fmt(t.bud) + '</td><td class="num">' + fmt(t.sp) + '</td><td class="num' + (t.bud - t.sp < 0 ? ' neg' : '') + '">' + fmt(t.bud - t.sp) + '</td>' + rateCell(t.sp, t.bud) + '<td class="num pv">' + (t.pend ? fmt(t.pend) : '–') + '</td></tr>'; });
-  h += '<tr><td style="white-space:nowrap"><b>합계</b></td><td class="num"><b>' + T.n + '</b></td><td class="num"><b>' + fmt(T.bud) + '</b></td><td class="num"><b>' + fmt(T.sp) + '</b></td><td class="num"><b>' + fmt(rest) + '</b></td>' + rateCell(T.sp, T.bud) + '<td class="num pv"><b>' + (T.pend ? fmt(T.pend) : '–') + '</b></td></tr></tbody></table></div>';
-  h += '<h2 class="sec-h ovsec" style="margin-top:22px">실별 · 과제별</h2><p class="sec-p">과제를 누르면 회의비·여비·수용비 같은 항목별 예산과 집행이 펼쳐지고, 펼친 항목(또는 「내역」)을 누르면 지출 내역이 나옵니다. 집행액은 세 기금 장부(원본 엑셀 + 가계부 입력분)에서 실시간으로 모은 값입니다.</p>';
-  rooms.forEach(rm => {
-    const l = R.vis.filter(r => roomOf(r) === rm); if (!l.length) return; const t = sumR(l);
-    h += '<details class="card box" style="margin-bottom:10px" open><summary><b>' + esc(rm) + '</b> <span class="muted">— 예산 ' + fmt(t.bud) + ' · 집행 ' + fmt(t.sp) + ' · 잔액 ' + fmt(t.bud - t.sp) + '</span></summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>과제</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
-    Array.from(new Set(l.map(r => r.x.kind))).forEach(kd => {
-      const kl = l.filter(r => r.x.kind === kd), kt = sumR(kl);
-      h += '<tr class="pj-kind"><td><b>' + esc(kd) + '</b> <span class="muted">' + kt.n + '개</span></td><td class="num"><b>' + fmt(kt.bud) + '</b></td><td class="num"><b>' + fmt(kt.sp) + '</b></td><td class="num"><b>' + fmt(kt.bud - kt.sp) + '</b></td>' + rateCell(kt.sp, kt.bud) + '<td class="num pv">' + (kt.pend ? fmt(kt.pend) : '–') + '</td></tr>';
-      kl.forEach(r => {
-        const id = rm + '|' + r.x.key, open = PJ.open.has(id), diff = r.o.items.length && Math.abs(r.o.lb - r.x.bud) >= 1;
-        h += '<tr class="pj-row" data-pj="' + esc(id) + '" style="cursor:pointer"><td>' + (open ? '▾ ' : '▸ ') + esc(r.x.name) + (r.x.note ? ' <span class="chip">' + esc(r.x.note) + '</span>' : '') + (!r.o.items.length ? (r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') : diff ? '<span class="sub2">엑셀 시트 값 ' + fmt(r.x.bud) + '원 (예산 조정으로 바뀜)</span>' : '') + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
-        if (open && r.o.items.length) h += '<tr class="pj-det"><td colspan="' + (VIEW ? 5 : 6) + '"><table style="width:100%"><thead><tr><th>항목</th><th>기금</th><th class="r">예산</th><th class="r">집행</th><th class="r">잔액</th><th class="r pv">진행중</th></tr></thead><tbody>' + r.o.items.map(i => '<tr data-lf="' + esc(i.label) + '" data-lfp="' + i.p + '"><td>' + esc(i.label) + ' <button class="lf-b" type="button" aria-label="' + esc(i.label) + ' 지출 내역 보기">내역</button></td><td>' + esc(FSHORT[i.p]) + '</td><td class="num">' + fmt(i.bud) + '</td><td class="num">' + fmt(i.sp) + '</td><td class="num' + (i.bud - i.sp < 0 ? ' neg' : '') + '">' + fmt(i.bud - i.sp) + '</td><td class="num pv">' + (i.pend ? fmt(i.pend) : '–') + '</td></tr>').join('') + '</tbody></table></td></tr>';
-      });
-    });
-    h += '</tbody></table></div></details>';
+  const T = sumR(R.vis), rest = T.bud - T.sp, rt = T.bud ? T.sp / T.bud : 0;
+  const pcs = v => (v * 100).toFixed(1) + '%', wd = v => Math.min(100, v * 100).toFixed(1) + '%';
+  const roomOf = r => r.x.room, RC = ['var(--f-chul)', 'var(--f-iwol)', 'var(--f-su)', '#0891b2', '#db2777', '#65a30d', '#ca8a04'];
+  const rl = rooms.filter(rm => R.vis.some(r => roomOf(r) === rm));
+  if (!PJ.sel || rl.indexOf(PJ.sel) < 0) PJ.sel = rl[0] || '';
+  $('#pj-top').innerHTML = '';
+  let h = '<section class="card hero" aria-label="과제 요약"><div class="ring" style="--p:' + wd(rt) + ';--rcv:var(--accent)" role="img" aria-label="전체 집행률 ' + pcs(rt) + '"><div class="ring-in"><span class="ring-v">' + pcs(rt) + '</span><span class="ring-l">전체 집행률</span></div></div>' +
+    '<div class="hero-stats"><div><div class="l">과제</div><div class="v">' + T.n + '<small> 개 · ' + rl.length + '개 실</small></div><div class="s">' + YR + '년' + (PJ.kind || PJ.q ? ' · 고른 조건만' : '') + '</div></div>' +
+    '<div><div class="l">과제 예산</div><div class="v">' + fmt(T.bud) + '<small> 원</small></div><div class="s">세 통장 합산</div></div>' +
+    '<div><div class="l">집행</div><div class="v">' + fmt(T.sp) + '<small> 원</small></div><div class="s">지출 완료 기준</div></div>' +
+    '<div><div class="l">잔액</div><div class="v' + (rest < 0 ? ' neg' : '') + '">' + fmt(rest) + '<small> 원</small></div>' + (VIEW ? '' : '<div class="s">진행중(품의·결재중) ' + fmt(T.pend) + '원</div>') + '</div></div></section>';
+  h += '<section class="fcards" aria-label="실별">';
+  rl.forEach((rm, i) => {
+    const l = R.vis.filter(r => roomOf(r) === rm), t = sumR(l), r = t.bud ? t.sp / t.bud : 0, hot = l.filter(x => isHot(x.sp, x.bud)).length, on = rm === PJ.sel;
+    h += '<article class="card fcard' + (on ? ' sel' : '') + '" style="--fc:' + RC[i % RC.length] + '"><div class="fc-h"><button class="fc-name" data-pjsel="' + esc(rm) + '"><span class="dot"></span>' + esc(rm) + '</button><span class="fc-rate">' + pcs(r) + '</span></div>' +
+      '<div class="muted" style="margin-top:-10px;padding-left:18px;font-size:13px">' + t.n + '개 과제</div>' +
+      '<div class="fbar"><b style="width:' + wd(r) + '"></b></div>' +
+      '<div class="fc-rows"><div><span>예산</span><b>' + fmt(t.bud) + '</b></div><div><span>집행</span><b>' + fmt(t.sp) + '</b></div><div class="em"><span>잔액</span><b class="' + (t.bud - t.sp < 0 ? 'neg' : '') + '">' + fmt(t.bud - t.sp) + '</b></div></div>' +
+      (hot ? '<span class="hotchip" style="align-self:flex-start;font-size:12.5px">거의 다 쓴 과제 ' + hot + '개</span>' : '<span class="muted" style="font-size:12.5px">거의 다 쓴 과제 없음</span>') +
+      (!VIEW && t.pend ? '<div class="fc-extra">진행중 ' + fmt(t.pend) + '</div>' : '') +
+      '<div class="fc-acts"><button class="btn' + (on ? ' primary' : '') + '" data-pjsel="' + esc(rm) + '" aria-pressed="' + on + '">' + (on ? '세부내역 보는 중' : '세부내역 보기') + SVG_DOWN + '</button></div></article>';
   });
+  h += '</section>';
+  if (PJ.sel) {
+    const rm = PJ.sel, ci = rl.indexOf(rm), l = R.vis.filter(r => roomOf(r) === rm), ks = Array.from(new Set(l.map(r => r.x.kind)));
+    const allOpen = ks.length > 0 && ks.every(k => PJ.kopen.has(rm + '|' + k));
+    h += '<section class="card box" style="--fc:' + RC[ci % RC.length] + ';margin-bottom:16px"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px"><h2 class="sec-h" style="font-size:19px;display:flex;align-items:center;gap:8px;margin:0"><span class="dot" style="width:12px;height:12px"></span>' + esc(rm) + ' 세부내역</h2><button class="btn sm" data-pjall="' + (allOpen ? '0' : '1') + '">' + (allOpen ? '모두 접기' : '모두 펼치기') + '</button></div>';
+    ks.forEach(kd => {
+      const kl = l.filter(r => r.x.kind === kd), kt = sumR(kl), key = rm + '|' + kd, op = PJ.kopen.has(key), kr = kt.bud ? kt.sp / kt.bud : 0, kh = isHot(kt.sp, kt.bud);
+      h += '<div class="kgrp' + (op ? ' open' : '') + '"><button type="button" data-pjk="' + esc(key) + '" aria-expanded="' + op + '"><span style="display:inline-flex;align-items:center;gap:8px">' + SVG_CHEV_C + '<b>' + esc(kd) + '</b><span class="muted" style="font-size:13.5px">' + kt.n + '개 과제</span></span>' +
+        '<span class="ks"><span>예산 <b>' + fmt(kt.bud) + '</b></span><span>집행 <b>' + fmt(kt.sp) + '</b></span><span>잔액 <b>' + fmt(kt.bud - kt.sp) + '</b></span>' + (!VIEW && kt.pend ? '<span>진행중 <b>' + fmt(kt.pend) + '</b></span>' : '') +
+        '<span class="kbar"><span class="fbar' + (kh ? ' hot' : '') + '" style="height:8px;flex:1"><b style="width:' + wd(kr) + '"></b></span><b class="' + (kh ? 'hotx' : '') + '">' + pcs(kr) + '</b></span></span></button>';
+      if (op) {
+        h += '<div class="tw" style="margin:0 0 12px 22px"><table><thead><tr><th>과제</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
+        kl.forEach(r => {
+          const id = rm + '|' + r.x.key, open = PJ.open.has(id), diff = r.o.items.length && Math.abs(r.o.lb - r.x.bud) >= 1;
+          h += '<tr class="pj-row" data-pj="' + esc(id) + '" style="cursor:pointer"><td>' + (open ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (r.x.note ? ' <span class="chip">' + esc(r.x.note) + '</span>' : '') + (!r.o.items.length ? (r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') : diff ? '<span class="sub2">엑셀 시트 값 ' + fmt(r.x.bud) + '원 (예산 조정으로 바뀜)</span>' : '') + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
+          if (open && r.o.items.length) h += '<tr class="pj-det"><td colspan="' + (VIEW ? 5 : 6) + '"><table style="width:100%"><thead><tr><th>항목</th><th>기금</th><th class="r">예산</th><th class="r">집행</th><th class="r">잔액</th><th class="r pv">진행중</th></tr></thead><tbody>' + r.o.items.map(i => '<tr data-lf="' + esc(i.label) + '" data-lfp="' + i.p + '"><td>' + esc(i.label) + ' <button class="lf-b" type="button" aria-label="' + esc(i.label) + ' 지출 내역 보기">내역</button></td><td>' + esc(FSHORT[i.p]) + '</td><td class="num">' + fmt(i.bud) + '</td><td class="num">' + fmt(i.sp) + '</td><td class="num' + (i.bud - i.sp < 0 ? ' neg' : '') + '">' + fmt(i.bud - i.sp) + '</td><td class="num pv">' + (i.pend ? fmt(i.pend) : '–') + '</td></tr>').join('') + '</tbody></table></td></tr>';
+        });
+        h += '</tbody></table></div>';
+      }
+      h += '</div>';
+    });
+    h += '<p class="sec-p" style="margin-top:12px">정책·기획·현안을 누르면 과제가 펼쳐지고, 과제를 누르면 인건비·회의비·여비·수용비·조사비 예산과 집행이, 항목(또는 「내역」)을 누르면 지출 내역이 나옵니다. 빨간색은 집행률 95% 이상입니다.</p></section>';
+  }
   if (R.extra.length && !PJ.room && !PJ.kind && !PJ.q) h += '<h2 class="sec-h ovsec" style="margin-top:22px">연구과제별 집행현황 시트에 없는 과제</h2><p class="sec-p">장부에는 예산 항목이 있는데 시트에는 없는 과제입니다.</p><div class="tw"><table><thead><tr><th>과제(항목 이름 기준)</th><th class="r">항목 예산 합</th><th class="r">집행액</th></tr></thead><tbody>' + R.extra.map(e => '<tr><td>' + esc(e.o.items[0].label.replace(/\s+\S+$/, '')) + '</td><td class="num">' + fmt(e.o.lb) + '</td><td class="num">' + fmt(e.o.sp) + '</td></tr>').join('') + '</tbody></table></div>';
   h += '<p class="sec-p" style="margin-top:14px">과제 구조(실·구분·예산액)는 「' + esc(pj.sheet) + '」 시트 기준(' + pj.yr + '년)입니다. 과제 예산이 바뀌면 출연금 엑셀을 다시 불러오세요.' + (pj.yr !== YR ? ' <b class="neg">지금 보는 연도(' + YR + '년)와 다릅니다.</b>' : '') + '</p>';
   box.innerHTML = h;
@@ -4387,6 +4485,9 @@ function wirePj(){
     const pf = e.target.closest('[data-pfix]'); if (pf) { pjPoolFix(pf.dataset.pfix); return; }
     const sv = e.target.closest('[data-pjsave]'); if (sv) { pjSave(sv.closest('tr')); return; }
     const tf = e.target.closest('[data-pjtf]'); if (tf) { pjTransfer(tf.dataset.pjtf); return; }
+    const ps = e.target.closest('[data-pjsel]'); if (ps) { PJ.sel = ps.dataset.pjsel; renderProj(); return; }
+    const pk = e.target.closest('[data-pjk]'); if (pk) { const k = pk.dataset.pjk; if (PJ.kopen.has(k)) PJ.kopen.delete(k); else PJ.kopen.add(k); renderProj(); return; }
+    const pa = e.target.closest('[data-pjall]'); if (pa) { const sel = PJ.sel; Array.from(new Set(projRows().vis.filter(r => r.x.room === sel).map(r => r.x.kind))).forEach(k => { if (pa.dataset.pjall === '1') PJ.kopen.add(sel + '|' + k); else PJ.kopen.delete(sel + '|' + k); }); renderProj(); return; }
     const rm = e.target.closest('[data-pjroom]'); if (rm) { PJ.room = rm.dataset.pjroom; renderProj(); return; }
     const lfr = e.target.closest('tr[data-lf]'); if (lfr) { lfDetail(lfr.dataset.lfp || PART, lfr.dataset.lf); return; }
     const r = e.target.closest('[data-pj]'); if (!r) return;
@@ -6673,7 +6774,7 @@ function wire(){
   $('#in-t').addEventListener('input', () => { if (PART !== 'se' && !$('#in-pay').value && /법인\s*카드|카드\s*(결제|사용)/.test($('#in-t').value)) { $('#in-pay').value = 'card'; showCardIn(true); renderPreview(); } });
   $('#imp-fund').addEventListener('change', e => { IMP.fund = e.target.value; if (IMP.sheets) renderImport(); });
   $('#nofund-go').addEventListener('click', () => { IMP.fund = PART; $('#imp-fund').value = PART; setTab('backup'); const c = $('#imp-card'); if (c) c.scrollIntoView({ behavior: 'smooth' }); });
-  $('#all-body').addEventListener('click', e => { if (e.target.closest('#all-xl')) { exportAll(); return; } const r = e.target.closest('[data-go]'); if (r) { tab = 'overview'; setPart(r.dataset.go); window.scrollTo({ top: 0 }); } });
+  $('#all-body').addEventListener('click', e => { if (e.target.closest('#all-xl')) { exportAll(); return; } const ad = e.target.closest('[data-alld]'); if (ad) { ALLD = ad.dataset.alld; renderAll(); return; } const r = e.target.closest('[data-go]'); if (r) { tab = 'overview'; setPart(r.dataset.go); window.scrollTo({ top: 0 }); } });
   $('#cd-m').addEventListener('change', e => { CARD.m = Number(e.target.value); renderCard(); });
   $('#cd-xl').addEventListener('click', exportCard);
   $('#cd-fix').addEventListener('click', e => { if (e.target.closest('#cd-fix-go')) cardFixGo(); });
