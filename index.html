@@ -462,6 +462,7 @@ body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd
       <button class="btn sm" id="b-open">모두 펼치기</button>
       <button class="btn sm" id="b-close">모두 접기</button>
       <button class="btn sm" id="b-csv">엑셀로 내려받기</button>
+      <button class="btn sm" id="b-mg" hidden>마감 엑셀 받기</button>
       <span class="muted" id="b-info"></span>
     </div>
     <div class="tw"><table>
@@ -991,6 +992,19 @@ async function encJSON(obj, pw, salt){
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te.encode(JSON.stringify(obj))));
   return { alg: 'AES-GCM-256/PBKDF2-SHA256', it: KDF_IT, salt, iv: b64(iv), ct: b64(ct) };
 }
+async function encBin(pt, pw){
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), key = await deriveKey(pw, b64(salt), KDF_IT);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, pt));
+  const out = new Uint8Array(36 + ct.length); out.set(te.encode('YRX1'), 0); new DataView(out.buffer).setUint32(4, KDF_IT); out.set(salt, 8); out.set(iv, 24); out.set(ct, 36);
+  return out;
+}
+async function decBin(u8, pw){
+  if (!u8 || u8.length < 36 || td.decode(u8.subarray(0, 4)) !== 'YRX1') throw new Error('format');
+  const it = new DataView(u8.buffer, u8.byteOffset, u8.byteLength).getUint32(4), key = await deriveKey(pw, b64(u8.slice(8, 24)), it);
+  let pt; try { pt = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8.slice(24, 36) }, key, u8.subarray(36))); } catch(e){ throw new Error('pw'); }
+  const n = new DataView(pt.buffer).getUint32(0);
+  return { h: JSON.parse(td.decode(pt.subarray(4, 4 + n))), u8: pt.slice(4 + n) };
+}
 async function decJSON(e, pw){
   const key = await deriveKey(pw, e.salt, e.it || KDF_IT);
   let pt; try { pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(e.iv) }, key, unb64(e.ct)); } catch(err){ throw new Error('pw'); }
@@ -1003,7 +1017,7 @@ const VIEW = true;
 const SNAP_FILE = '통장가계부_현황자료.js';
 const VTITLE = '예산 집행 현황';
 const SNAP_JSON = 'data.enc.json';
-let snapBusy = false, VPW = '';
+let snapBusy = false, VPW = '', VGH = false;
 function snapScript(){
   return new Promise(res => {
     window.__CCG_SNAP = null;
@@ -1025,7 +1039,7 @@ async function snapLoad(sameAt){
     if (j && j.enc) {
       if (sameAt && j.at === sameAt) return 'same';
       if (!VPW) return { need: true };
-      try { const sn = await decJSON(j.enc, VPW); return sn && sn.base ? sn : null; } catch(e){ return { need: true, bad: true }; }
+      try { const sn = await decJSON(j.enc, VPW); if (sn && sn.base) VGH = true; return sn && sn.base ? sn : null; } catch(e){ return { need: true, bad: true }; }
     }
     return await snapScript();
   } finally { snapBusy = false; }
@@ -1366,7 +1380,12 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v3.9', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank };
+  return { v: 3, at: new Date().toISOString(), ver: 'v4.0', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+}
+function closeMeta(){
+  const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
+  const o = {}; FUND3.forEach(p => { const x = c[p]; if (x && x.name && x.at) o[p] = { name: String(x.name), at: String(x.at), size: Number(x.size) || 0 }; });
+  return Object.keys(o).length ? o : undefined;
 }
 function snapText(){ return '/* 통장 가계부 현황 자료 — 「현황 보기」 파일이 읽는 자료입니다. 직접 고치지 마세요. */\nwindow.__CCG_SNAP=' + JSON.stringify(snapBuild()) + ';\n'; }
 let shT = null;
@@ -1404,8 +1423,9 @@ async function shInit(){
   renderSh();
 }
 /* GitHub로 올리기 (암호화한 자료를 저장소의 data.enc.json 으로) */
-const GH = { cfg: null, at: '', err: '', busy: false, last: '', t: null };
+const GH = { cfg: null, at: '', err: '', busy: false, last: '', t: null, arm: '', cbusy: false };
 const GH_PATH = 'data.enc.json';
+const closePath = p => 'close_' + p + '.enc';
 function ghErr(status){
   const e = new Error('gh' + status);
   e.ghmsg = status === 401 ? '토큰이 맞지 않습니다 (만료됐거나 복사가 잘못됨)' : status === 403 ? '권한이 없습니다 — 토큰에 이 저장소의 Contents 읽기·쓰기 권한이 필요합니다' : status === 404 ? '저장소를 찾을 수 없습니다 — 계정·저장소 이름과, 토큰이 이 저장소를 허용했는지 확인하세요' : status === 409 || status === 422 ? '동시에 바뀌어 올리지 못했습니다 (잠시 뒤 자동 재시도)' : '올리지 못했습니다 (오류 ' + status + ')';
@@ -1445,9 +1465,87 @@ async function ghWrite(manual){
     return false;
   } finally { GH.busy = false; renderSh(); }
 }
+const ghUrl = (cfg, path) => 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) + '/contents/' + path;
+const ghHd = cfg => ({ 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github.object+json', 'X-GitHub-Api-Version': '2022-11-28' });
+const ghMsg = e => e && e.ghmsg ? e.ghmsg : (e && e.name === 'TypeError' ? '인터넷에 연결되지 않았거나 막혀 있습니다' : '처리하지 못했습니다');
+const nap = ms => new Promise(r => setTimeout(r, ms));
+async function ghLock(fn){ for (let i = 0; i < 160 && GH.busy; i++) await nap(250); GH.busy = true; try { return await fn(); } finally { GH.busy = false; } }
+async function ghPutPath(cfg, path, content, msg){
+  const url = ghUrl(cfg, path), hd = ghHd(cfg);
+  for (let k = 0; k < 3; k++) {
+    let sha; const g = await fetch(url, { headers: hd, cache: 'no-store' });
+    if (g.ok) { const o = await g.json(); sha = o && o.sha; } else if (g.status !== 404) throw ghErr(g.status);
+    const body = { message: msg, content }; if (sha) body.sha = sha;
+    const r = await fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, hd, { 'Accept': 'application/vnd.github+json' }), body: JSON.stringify(body) });
+    if (r.ok) return true;
+    if (r.status === 409 || r.status === 422) { await nap(800); continue; }
+    throw ghErr(r.status);
+  }
+  throw ghErr(409);
+}
+async function ghDelPath(cfg, path, msg){
+  const url = ghUrl(cfg, path), hd = ghHd(cfg);
+  for (let k = 0; k < 3; k++) {
+    const g = await fetch(url, { headers: hd, cache: 'no-store' });
+    if (g.status === 404) return true; if (!g.ok) throw ghErr(g.status);
+    const o = await g.json();
+    const r = await fetch(url, { method: 'DELETE', headers: Object.assign({ 'Content-Type': 'application/json' }, hd, { 'Accept': 'application/vnd.github+json' }), body: JSON.stringify({ message: msg, sha: o && o.sha }) });
+    if (r.ok || r.status === 404) return true;
+    if (r.status === 409 || r.status === 422) { await nap(800); continue; }
+    throw ghErr(r.status);
+  }
+  throw ghErr(409);
+}
+/* 마감 엑셀(집행현황 엑셀 갱신본)을 공유 비밀번호로 암호화해 저장소의 close_기금.enc 로 올리고, 장부에 이름·시각을 남긴다 → 현황 자료에 목록이 실려 팀원 화면에 「받기」 버튼이 생김 */
+async function ghClosePut(p, name, u8){
+  const cfg = GH.cfg; if (!cfg) return { ok: false, err: '팀 공유가 꺼져 있습니다' };
+  const at = new Date().toISOString(), hd = te.encode(JSON.stringify({ p, name, at, size: u8.length }));
+  const pt = new Uint8Array(4 + hd.length + u8.length); new DataView(pt.buffer).setUint32(0, hd.length); pt.set(hd, 4); pt.set(u8, 4 + hd.length);
+  GH.cbusy = true; renderSh();
+  try {
+    const enc = await encBin(pt, cfg.pw);
+    await ghLock(() => ghPutPath(cfg, closePath(p), b64(enc), FSHORT[p] + ' 마감 엑셀 ' + at.slice(0, 16).replace('T', ' ') + 'Z'));
+    const ok = await Store._file(d => { if (!d.gh) return; d.gh.close = Object.assign({}, d.gh.close || {}); d.gh.close[p] = { name, at, size: u8.length }; });
+    return ok ? { ok: true } : { ok: false, err: '장부 파일에 기록하지 못했습니다' };
+  } catch(e){ return { ok: false, err: ghMsg(e) }; }
+  finally { GH.cbusy = false; renderSh(); }
+}
+async function ghCloseRemove(p){
+  const cfg = GH.cfg; if (!cfg) return { ok: false, err: '팀 공유가 꺼져 있습니다' };
+  GH.cbusy = true; renderSh();
+  try {
+    await ghLock(() => ghDelPath(cfg, closePath(p), FSHORT[p] + ' 마감 엑셀 내림'));
+    const ok = await Store._file(d => { if (d.gh && d.gh.close) { d.gh.close = Object.assign({}, d.gh.close); delete d.gh.close[p]; } });
+    return ok ? { ok: true } : { ok: false, err: '장부 파일에 기록하지 못했습니다' };
+  } catch(e){ return { ok: false, err: ghMsg(e) }; }
+  finally { GH.cbusy = false; renderSh(); }
+}
+async function xlsxSheetNames(u8){
+  const z = await zipEntries(u8), wb = await zipRead(z, 'xl/workbook.xml'); if (!wb) throw new Error('sheet');
+  return Array.from(new DOMParser().parseFromString(wb, 'application/xml').querySelectorAll('sheet')).map(x => x.getAttribute('name') || '');
+}
+/* 이미 만든 엑셀(예: 어제 마감한 갱신본)을 골라 올리기 — 그 기금의 현금출납 시트가 있는지 확인 */
+async function ghCloseUpload(p){
+  if (!GH.cfg || GH.cbusy) return;
+  const f = await pickXlsx(); if (!f) return;
+  const u8 = new Uint8Array(await f.arrayBuffer()), want = withFund(p, () => DATA.src && DATA.src.cash && DATA.src.cash.sheet) || '';
+  if (want) { let names = []; try { names = await xlsxSheetNames(u8); } catch(e){ toast('엑셀 파일을 읽지 못했습니다'); return; } if (names.indexOf(want) < 0) { toast('이 파일에는 「' + want + '」 시트가 없습니다 — ' + FSHORT[p] + ' 엑셀이 맞는지 확인하세요'); return; } }
+  toast(FSHORT[p] + ' 마감 엑셀을 올리는 중…');
+  const r = await ghClosePut(p, f.name, u8);
+  toast(r.ok ? FSHORT[p] + ' 마감 엑셀을 올렸습니다. 팀원 화면에는 1~2분 안에 보입니다' : '올리지 못했습니다 — ' + r.err);
+}
+async function ghCloseDel(p){
+  if (!GH.cfg || GH.cbusy) return;
+  const k = 'cdel:' + p;
+  if (GH.arm !== k) { GH.arm = k; renderSh(); setTimeout(() => { if (GH.arm === k) { GH.arm = ''; renderSh(); } }, 6000); return; }
+  GH.arm = ''; const r = await ghCloseRemove(p);
+  toast(r.ok ? FSHORT[p] + ' 마감 엑셀을 내렸습니다' : '내리지 못했습니다 — ' + r.err);
+}
 async function ghSave(){
   const owner = $('#gh-owner').value.trim(), repo = $('#gh-repo').value.trim(), token = $('#gh-token').value.trim(), pw = $('#gh-pw').value, old = GH.cfg || {};
   const cfg = { owner, repo, token: token || old.token || '', pw: pw || old.pw || '' };
+  const sameRepo = old.owner === owner && old.repo === repo, samePw = sameRepo && old.pw === cfg.pw;
+  if (samePw && old.close) cfg.close = old.close;
   if (!/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(repo)) { toast('GitHub 계정 이름과 저장소 이름을 영문 그대로 입력하세요'); return; }
   if (!cfg.token) { toast('토큰을 붙여넣으세요'); return; }
   if (cfg.pw.length < 8) { toast('공유 비밀번호는 8자 이상으로 정하세요 (12자 이상 권장)'); return; }
@@ -1456,6 +1554,11 @@ async function ghSave(){
   if (!ok) { toast('설정을 저장하지 못했습니다'); return; }
   GH.last = ''; GH.err = '';
   await ghWrite(true);
+  if (sameRepo && !samePw && old.close) {
+    let n = 0;
+    for (const p of FUND3) { const c = old.close[p], rec = c ? await xbGet(p) : null; if (rec && rec.u8 && rec.name === c.name && (await ghClosePut(p, rec.name, rec.u8)).ok) n++; }
+    toast(n ? '마감 엑셀 ' + n + '개를 새 공유 비밀번호로 다시 올렸습니다' : '공유 비밀번호가 바뀌어 마감 엑셀은 다음 업무 마감 때 다시 올라갑니다');
+  }
 }
 async function ghOff(){
   const ok = await Store._file(d => { d.gh = null; });
@@ -1469,7 +1572,7 @@ function renderSh(){
   const onL = !!SH.h, liveL = onL && SH.ok && !SH.err;
   if (gc) { chip.className = 'btn sm ' + (GH.err ? 'warn' : 'ok'); chip.textContent = GH.err ? '팀 공유 오류 — 확인' : '팀 공유 중' + (GH.at ? ' · ' + GH.at : ' · 올리는 중'); chip.title = GH.err || '누르면 지금 GitHub에 올립니다'; }
   else { chip.className = 'btn sm ' + (liveL ? 'ok' : onL ? 'warn' : ''); chip.textContent = liveL ? '팀 공유 중(폴더)' + (SH.at ? ' · ' + SH.at : '') : onL ? '팀 공유 켜기 (허용 필요)' : '팀 공유 꺼짐'; chip.title = liveL ? '누르면 지금 현황 자료를 갱신합니다' : onL ? '누르고 「허용」을 선택하면 다시 공유합니다' : '누르면 팀 공유 설정으로 이동합니다'; }
-  const sig = JSON.stringify([gc && gc.owner, gc && gc.repo, !!gc, GH.at, GH.err, GH.busy, onL, SH.h && SH.h.name, SH.ok, SH.at, SH.err]);
+  const sig = JSON.stringify([gc && gc.owner, gc && gc.repo, !!gc, GH.at, GH.err, GH.busy, onL, SH.h && SH.h.name, SH.ok, SH.at, SH.err, gc && gc.close, GH.arm, GH.cbusy]);
   if (pn.dataset.sig === sig) return;
   const ae = document.activeElement; if (pn.dataset.sig && ae && pn.contains(ae) && /^(INPUT|TEXTAREA)$/.test(ae.tagName)) return;
   pn.dataset.sig = sig;
@@ -1483,6 +1586,13 @@ function renderSh(){
     '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><input class="field" id="gh-token" type="password" placeholder="' + (gc ? '토큰 (바꿀 때만 입력)' : '토큰 (github_pat_ 로 시작)') + '" style="max-width:260px" autocomplete="off"><input class="field" id="gh-pw" type="password" placeholder="' + (gc ? '공유 비밀번호 (바꿀 때만 입력)' : '공유 비밀번호 (팀원이 입력할 것, 8자 이상)') + '" style="max-width:260px" autocomplete="new-password"></div>' +
     '<div class="row" style="margin-top:8px"><button class="btn primary" data-sh="ghsave">' + (gc ? '설정 저장하고 올리기' : '저장하고 켜기') + '</button> ' + (gc ? '<button class="btn" data-sh="ghnow">지금 올리기</button> <button class="btn" data-sh="ghoff">끄기</button>' : '') + '</div>' +
     '<p class="sec-p" style="margin-top:8px">공유 비밀번호는 <b>장부 비밀번호와 다르게</b> 정하세요. 올라가는 파일은 이 비밀번호로 암호화되어, 주소를 알아도 비밀번호 없이는 읽을 수 없습니다.</p>';
+  if (gc) {
+    h += '<div class="card box" style="margin-top:12px"><p class="sec-p" style="margin:0"><b>마감 엑셀</b> — 업무 마감 때 받는 「원본 엑셀 갱신본」이 팀원 화면에도 자동으로 올라갑니다(공유 비밀번호로 암호화). 팀원은 전체 현황의 「마감 엑셀 받기」에서 받습니다. 이미 만든 엑셀은 「파일 골라 올리기」로 올립니다.</p>' +
+      FUND3.map(p => { const c = gc.close && gc.close[p], arm = GH.arm === 'cdel:' + p;
+        return '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><b style="min-width:76px">' + esc(FSHORT[p]) + '</b><span class="ink2">' + (c ? esc(c.name) + ' <span class="muted">· ' + esc(vstamp(c.at)) + ' 올림</span>' : '<span class="muted">올린 파일 없음</span>') + '</span>' +
+          '<button class="btn sm" data-sh="cup:' + p + '"' + (GH.cbusy ? ' disabled' : '') + '>' + (c ? '다른 파일 올리기' : '파일 골라 올리기') + '</button>' + (c ? '<button class="btn sm' + (arm ? ' danger' : '') + '" data-sh="cdel:' + p + '"' + (GH.cbusy ? ' disabled' : '') + '>' + (arm ? '정말 내리기' : '내리기') + '</button>' : '') + '</div>'; }).join('') +
+      (GH.cbusy ? '<p class="sec-p" style="margin-top:8px">마감 엑셀을 올리는 중…</p>' : '') + '</div>';
+  }
   let hl = '<p class="sec-p">공유 폴더가 있는 경우에만 쓰세요. 이 방식의 파일(<code>' + SNAP_FILE + '</code>)은 <b>암호화되지 않습니다</b>.</p>';
   if (!onL) hl += '<div class="row" style="margin-top:8px"><button class="btn" data-sh="pick">공유 폴더에 자료 파일 만들기</button></div>';
   else {
@@ -1492,17 +1602,30 @@ function renderSh(){
   }
   h += '<details style="margin-top:12px"><summary class="sec-p"><b>② 공유 폴더로 공유 (파일)</b></summary>' + hl + '</details>';
   h += '<p class="sec-p" style="margin-top:12px"><b>공유 자료에 들어가는 것</b>: 예산항목별 예산·집행 금액, 월별 집행액, 과제(실)별 예산, <b>지출이 끝난 건</b>의 지출 내용(제목·원본 장부 적요)·금액·날짜·소속 항목 — 제목에 적은 이름도 그대로 보입니다</p>' +
-    '<p class="sec-p"><b>들어가지 않는 것</b>: 품의·결재중(진행 중) 건, 메모·카드번호, 기타소득(수당) 명단, 주민번호·계좌번호, 급여 명세, 세입세출외(4대보험·세금) 자료, 수입 내역</p>';
+    '<p class="sec-p"><b>들어가지 않는 것</b>: 품의·결재중(진행 중) 건, 메모·카드번호, 기타소득(수당) 명단, 주민번호·계좌번호, 급여 명세, 세입세출외(4대보험·세금) 자료, 수입 내역</p>' +
+    (gc ? '<p class="sec-p">단, <b>마감 엑셀</b>은 집행현황 엑셀 파일 그대로라 품의·결재중 줄, 채주, 수입 내역도 들어 있습니다.</p>' : '');
   pn.innerHTML = h;
 }
 function viewApply(sn){
-  VIEWAT = sn.at || ''; VBANK = sn.bank || null;
+  VIEWAT = sn.at || ''; VBANK = sn.bank || null; VCLOSE = sn.close || null;
   S.allE = (sn.entries || []).slice(); S.allR = (sn.rules || []).slice(); S.budgets = (sn.budgets || []).slice();
   S.etc = []; S.days = []; S.etcp = []; S.etat = [];
   splitParts(); buildCtx(); S.loaded.e = S.loaded.r = S.loaded.b = true;
   BM = budMap(); Store.emit();
 }
-let VIEWAT = '', VIEWBASE = '', vBusy = false, VBANK = null;
+let VIEWAT = '', VIEWBASE = '', vBusy = false, VBANK = null, VCLOSE = null, vcBusy = false;
+/* 팀원 화면: 담당자가 업무 마감 때 올린 집행현황 엑셀 받기 (공유 비밀번호로 풀어서 그대로 저장) */
+async function vCloseGet(p){
+  const m = VCLOSE && VCLOSE[p]; if (!m || vcBusy) return;
+  vcBusy = true; toast(FSHORT[p] + ' 마감 엑셀을 받는 중…');
+  try {
+    let u8 = null; try { const r = await fetch(closePath(p) + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) u8 = new Uint8Array(await r.arrayBuffer()); } catch(e){}
+    if (!u8) { toast('파일을 아직 받을 수 없습니다. 올린 직후면 1~2분 뒤 다시 눌러 주세요'); return; }
+    let o; try { o = await decBin(u8, VPW); } catch(e){ toast(e && e.message === 'pw' ? '파일을 열 수 없습니다. 새로고침(Ctrl+F5)한 뒤 다시 눌러 주세요' : '파일을 아직 받을 수 없습니다. 1~2분 뒤 다시 눌러 주세요'); return; }
+    if (o.h && o.h.at && m.at && o.h.at < m.at) { toast('새 마감 엑셀이 아직 반영되는 중입니다. 1~2분 뒤 다시 눌러 주세요'); return; }
+    await saveBytes((o.h && o.h.name) || m.name, o.u8);
+  } finally { vcBusy = false; }
+}
 async function viewRefresh(){
   if (vBusy) return; vBusy = true;
   try {
@@ -2127,6 +2250,7 @@ function renderBudget(){
   const t = agg.tot;
   h += '<tr class="tfoot"><td>합계</td>' + budCells(t, bankNow(PART)) + '</tr>';
   body.innerHTML = h;
+  { const mg = $('#b-mg'); if (mg) { const c = VIEW && VGH && VCLOSE && VCLOSE[PART]; mg.hidden = !c; mg.title = c ? c.name + ' (' + vstamp(c.at) + ' 올림)' : ''; } }
 }
 
 /* ───────── 항목별 지출 내역 (예산 항목을 누르면 열림 · 팀원 보기 화면에서도 같음) ───────── */
@@ -3995,6 +4119,8 @@ function renderAll(){
     '<div class="kpi"><div class="l">집행합계</div><div class="v">' + fmt(T.sp) + '</div><div class="s">지출 완료 기준</div></div>' +
     '<div class="kpi"><div class="l">' + (nBk ? '잔액' : '집행잔액') + '</div><div class="v' + (rem < 0 ? ' neg' : '') + '">' + fmt(rem) + '</div><div class="s">' + esc(!nBk ? '예산 − 집행합계' : (nBk === ok.length ? '' : '엑셀 잔액이 없는 기금은 예산 − 집행 ') + bankSub({ amt: ok.reduce((a, x) => a + (x.dep ? x.dep.amt : 0), 0) }, ok.reduce((a, x) => a + (x.bank != null ? x.gap || 0 : 0), 0))) + '</div></div>' +
     '<div class="kpi"><div class="l">집행률</div><div class="v">' + (rt * 100).toFixed(1) + '%</div><div class="meter"><b style="width:' + Math.min(100, rt * 100) + '%"></b></div></div></section>';
+  if (VIEW && VGH && VCLOSE) { const ps = FUND3.filter(p => VCLOSE[p] && VCLOSE[p].name); if (ps.length) h += '<section class="card box" id="v-close" style="margin:12px 0 4px"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline"><b>마감 엑셀 받기</b><span class="muted" style="font-size:12.5px">담당자가 업무 마감 때 만든 집행현황 엑셀입니다. 마감한 때 기준이라 지금 화면 숫자와 다를 수 있습니다.</span></div>' +
+    ps.map(p => '<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><button class="btn sm" data-vclose="' + p + '">' + esc(FSHORT[p]) + ' 받기</button><span class="ink2">' + esc(VCLOSE[p].name) + '</span><span class="muted" style="font-size:12.5px">' + esc(vstamp(VCLOSE[p].at)) + ' 올림</span></div>').join('') + '</section>'; }
   h += '<h2 class="sec-h ovsec">기금별 예산 · 집행 · 잔액</h2><p class="sec-p">줄을 누르거나 위의 통장 버튼을 누르면 그 통장의 예산 항목별 현황으로 들어갑니다.</p>';
   h += '<div class="tw"><table><thead><tr><th>기금</th><th class="r">예산액</th><th class="r">집행합계</th><th class="r">' + (nBk ? '잔액' : '집행잔액') + '</th><th class="r">집행률</th><th class="r pv">진행중<span class="sub2">품의·결재중</span></th><th class="r vhide">입력 건수</th></tr></thead><tbody>';
   st.forEach(x => {
@@ -5756,6 +5882,7 @@ async function xpExport(p){
     if (R.dupRows && R.dupRows.length) m +=' · ⚠ 같은 지출이 엑셀에 두 번 들어 있습니다: ' + R.dupRows.slice(0, 3).map(x => x.m + '월 ' + (x.label ? x.label + ' ' : '') + fmt(x.amt) + '원 (' + x.rows.join('·') + '행)').join(', ') + (R.dupRows.length > 3 ? ' 외 ' + (R.dupRows.length - 3) + '건' : '') + ' — 엑셀에서 남는 줄을 지운 뒤, 다음 마감 때 「내가 고친 엑셀로 바꾸기」로 그 파일을 골라 주세요';
     if (be.miss.length || R.warn.length) m += ' · 예산 ' + (be.miss.length + R.warn.length) + '건은 엑셀에서 직접 고치세요';
     { const pi = poolInfo(p), d = rsDiff(pi); if (pi && d) m += ' · ⚠ 연구용역비 총합이 ' + fmt(pi.total) + '원보다 ' + fmt(Math.abs(d)) + '원 ' + (d > 0 ? '적습니다' : '많습니다') + ' — 과제별 현황 → 예산 조정의 「차이 맞추기」를 누른 뒤 다시 받으세요'; }
+    if (saved !== false && GH.cfg) { toast('팀원 화면에 ' + FSHORT[p] + ' 마감 엑셀을 올리는 중…'); const up = await ghClosePut(p, name, out.u8); m += up.ok ? ' · 팀원 화면(마감 엑셀 받기)에도 올렸습니다' : ' · ⚠ 팀원 화면에는 올리지 못했습니다(' + up.err + ') — 팀 공유 → 마감 엑셀에서 다시 올리세요'; }
     return { ok: true, msg: m, name };
   } catch(err){ return { ok: false, msg: FSHORT[p] + ': 갱신본을 만들지 못했습니다 — ' + (err && err.message || err) }; }
 }
@@ -6826,6 +6953,9 @@ function wire(){
     if (!b) { const r = e.target.closest('tr[data-lf]'); if (r) lfDetail(PART, r.dataset.lf); return; }
     const k = b.dataset.t; if (open.has(k)) open.delete(k); else open.add(k); renderBudget();
   });
+  $('#b-mg').addEventListener('click', () => vCloseGet(PART));
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-vclose]'); if (b) vCloseGet(b.dataset.vclose); });
+  $('#sh-panel').addEventListener('click', e => { const b = e.target.closest('[data-sh]'); if (!b) return; const k = b.dataset.sh; if (k.indexOf('cup:') === 0) ghCloseUpload(k.slice(4)); else if (k.indexOf('cdel:') === 0) ghCloseDel(k.slice(5)); });
   $('#b-csv').addEventListener('click', () => {
     const rows = [['대분류', '중분류', '소분류', YR + '년 예산', '집행합계', '집행잔액', '집행률'].map(H)];
     agg.dae.forEach(d => !d.empty && d.kids.forEach(j => j.kids.forEach(l => { const sp = spent(l); rows.push([d.name, j.name, l.name, N(l.bud), N(sp), N(l.bud - sp), l.bud ? PC(sp / l.bud) : '']); })));
