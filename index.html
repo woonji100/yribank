@@ -1459,7 +1459,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v5.0', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v5.3', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
 }
 function closeMeta(){
   const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
@@ -1604,6 +1604,11 @@ async function xlsxSheetNames(u8){
   return Array.from(new DOMParser().parseFromString(wb, 'application/xml').querySelectorAll('sheet')).map(x => x.getAttribute('name') || '');
 }
 /* 이미 만든 엑셀(예: 어제 마감한 갱신본)을 골라 올리기 — 그 기금의 현금출납 시트가 있는지 확인 */
+async function ghNow(){
+  if (!GH.cfg) return false;
+  for (let i = 0; i < 120 && GH.busy; i++) await nap(250);
+  clearTimeout(GH.t); return ghWrite(false);
+}
 async function ghCloseUpload(p){
   if (!GH.cfg || GH.cbusy) return;
   const f = await pickXlsx(); if (!f) return;
@@ -1611,13 +1616,14 @@ async function ghCloseUpload(p){
   if (want) { let names = []; try { names = await xlsxSheetNames(u8); } catch(e){ toast('엑셀 파일을 읽지 못했습니다'); return; } if (names.indexOf(want) < 0) { toast('이 파일에는 「' + want + '」 시트가 없습니다 — ' + FSHORT[p] + ' 엑셀이 맞는지 확인하세요'); return; } }
   toast(FSHORT[p] + ' 마감 엑셀을 올리는 중…');
   const r = await ghClosePut(p, f.name, u8);
+  if (r.ok) await ghNow();
   toast(r.ok ? FSHORT[p] + ' 마감 엑셀을 올렸습니다. 팀원 화면에는 1~2분 안에 보입니다' : '올리지 못했습니다 — ' + r.err);
 }
 async function ghCloseDel(p){
   if (!GH.cfg || GH.cbusy) return;
   const k = 'cdel:' + p;
   if (GH.arm !== k) { GH.arm = k; renderSh(); setTimeout(() => { if (GH.arm === k) { GH.arm = ''; renderSh(); } }, 6000); return; }
-  GH.arm = ''; const r = await ghCloseRemove(p);
+  GH.arm = ''; const r = await ghCloseRemove(p); if (r.ok) await ghNow();
   toast(r.ok ? FSHORT[p] + ' 마감 엑셀을 내렸습니다' : '내리지 못했습니다 — ' + r.err);
 }
 async function ghSave(){
@@ -3364,7 +3370,7 @@ function dayCloseDlg(){
     '<div class="ink2" style="margin-bottom:8px">오늘 한 일 — 새로 입력 <b>' + sn.act.add + '</b> · 품의 올림 <b>' + sn.act.pum + '</b> · 지출결의 올림 <b>' + sn.act.gy + '</b> · 지출완료 <b>' + sn.act.done + '</b></div>' +
     '<div class="tw"><table><thead><tr><th>통장</th><th class="r">집행</th><th class="r">잔액</th><th class="r">품의만</th><th class="r">결재중</th></tr></thead><tbody>' + sn.funds.filter(f => f.ok).map(f => '<tr><td>' + esc(FSHORT[f.p]) + '</td><td class="r">' + fmt(f.sp) + '</td><td class="r">' + fmt(f.bud - f.sp) + '</td><td class="r">' + f.wp + '</td><td class="r">' + f.wg + '</td></tr>').join('') + '</tbody></table></div>' +
     (pend ? '<div class="muted" style="margin-top:6px">작업창에 지출 전인 건 ' + pend + '건이 남아 있습니다 (마감 기록에 함께 남습니다).</div>' : '') + (unc ? '<div class="neg" style="margin-top:4px">⚠ 항목을 못 찾은 입력 ' + unc + '건이 있습니다.</div>' : '') +
-    '<input class="field" id="dy-memo" placeholder="메모 (선택)  예) 내일 카드명세서 대조" style="width:100%;margin-top:10px" autocomplete="off">' +
+    '<input class="field" id="dy-memo" placeholder="메모 (선택)  예) 내일 카드명세서 대조" style="width:100%;margin-top:10px" autocomplete="off" value="' + esc(((S.days || []).find(x => x.date === t) || {}).memo || '') + '">' +
     '<div id="dy-xp" style="margin-top:10px"></div>' +
     '<div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn" id="dy-no">취소</button><button class="btn primary" id="dy-ok">마감</button></div></div>';
   document.body.appendChild(el); xpDlgFill($('#dy-xp'));
@@ -3374,7 +3380,7 @@ function dayCloseDlg(){
     Store.dayOp(l => l.map(x => x.date === t ? Object.assign({}, x, { closeAt: hmNow(), memo, snap: sn }) : x));
     if (xl) exportLedger(fx() + ' 예산집행현황(' + mdLabel(t) + ').xlsx');
     toast('업무를 마감했습니다 (' + hmNow() + ')');
-    if (xfs.length) { const ms = []; for (const p of xfs) ms.push((await xpExport(p)).msg); xpReport(ms); }
+    if (xfs.length) { const ms = []; for (const p of xfs) ms.push((await xpExport(p)).msg); if (GH.cfg) { toast('직원 화면 자료를 올리는 중…'); await ghNow(); ms.push('직원 화면에는 1~2분 뒤에 보입니다(GitHub 반영 시간). 직원은 새로고침(Ctrl+F5)하면 바로 봅니다.'); } else ms.push('팀 공유(GitHub)가 꺼져 있어 직원 화면에는 올리지 않았습니다.'); xpReport(ms); }
   };
 }
 function renderDays(){
@@ -4344,8 +4350,8 @@ function renderProj(){
       if (op) {
         h += '<div class="tw" style="margin:0 0 12px 22px"><table><thead><tr><th>과제</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
         kl.forEach(r => {
-          const id = rm + '|' + r.x.key, open = PJ.open.has(id), diff = r.o.items.length && Math.abs(r.o.lb - r.x.bud) >= 1;
-          h += '<tr class="pj-row" data-pj="' + esc(id) + '" style="cursor:pointer"><td>' + (open ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (r.x.note ? ' <span class="chip">' + esc(r.x.note) + '</span>' : '') + (!r.o.items.length ? (r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') : diff ? '<span class="sub2">엑셀 시트 값 ' + fmt(r.x.bud) + '원 (예산 조정으로 바뀜)</span>' : '') + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
+          const id = rm + '|' + r.x.key, open = PJ.open.has(id);
+          h += '<tr class="pj-row" data-pj="' + esc(id) + '" style="cursor:pointer"><td>' + (open ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (r.x.note ? ' <span class="chip">' + esc(r.x.note) + '</span>' : '') + (!r.o.items.length && r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
           if (open && r.o.items.length) h += '<tr class="pj-det"><td colspan="' + (VIEW ? 5 : 6) + '"><table style="width:100%"><thead><tr><th>항목</th><th>기금</th><th class="r">예산</th><th class="r">집행</th><th class="r">잔액</th><th class="r pv">진행중</th></tr></thead><tbody>' + r.o.items.map(i => '<tr data-lf="' + esc(i.label) + '" data-lfp="' + i.p + '"><td>' + esc(i.label) + ' <button class="lf-b" type="button" aria-label="' + esc(i.label) + ' 지출 내역 보기">내역</button></td><td>' + esc(FSHORT[i.p]) + '</td><td class="num">' + fmt(i.bud) + '</td><td class="num">' + fmt(i.sp) + '</td><td class="num' + (i.bud - i.sp < 0 ? ' neg' : '') + '">' + fmt(i.bud - i.sp) + '</td><td class="num pv">' + (i.pend ? fmt(i.pend) : '–') + '</td></tr>').join('') + '</tbody></table></td></tr>';
         });
         h += '</tbody></table></div>';
@@ -4355,7 +4361,7 @@ function renderProj(){
     h += '<p class="sec-p" style="margin-top:12px">정책·기획·현안을 누르면 과제가 펼쳐지고, 과제를 누르면 인건비·회의비·여비·수용비·조사비 예산과 집행이, 항목(또는 「내역」)을 누르면 지출 내역이 나옵니다. 빨간색은 집행률 95% 이상입니다.</p></section>';
   }
   if (R.extra.length && !PJ.room && !PJ.kind && !PJ.q) h += '<h2 class="sec-h ovsec" style="margin-top:22px">연구과제별 집행현황 시트에 없는 과제</h2><p class="sec-p">장부에는 예산 항목이 있는데 시트에는 없는 과제입니다.</p><div class="tw"><table><thead><tr><th>과제(항목 이름 기준)</th><th class="r">항목 예산 합</th><th class="r">집행액</th></tr></thead><tbody>' + R.extra.map(e => '<tr><td>' + esc(e.o.items[0].label.replace(/\s+\S+$/, '')) + '</td><td class="num">' + fmt(e.o.lb) + '</td><td class="num">' + fmt(e.o.sp) + '</td></tr>').join('') + '</tbody></table></div>';
-  h += '<p class="sec-p" style="margin-top:14px">과제 구조(실·구분·예산액)는 「' + esc(pj.sheet) + '」 시트 기준(' + pj.yr + '년)입니다. 과제 예산이 바뀌면 출연금 엑셀을 다시 불러오세요.' + (pj.yr !== YR ? ' <b class="neg">지금 보는 연도(' + YR + '년)와 다릅니다.</b>' : '') + '</p>';
+  h += '<p class="sec-p" style="margin-top:14px">실·과제 구분은 「' + esc(pj.sheet) + '」 시트 기준(' + pj.yr + '년)이고, 예산액은 예산 조정이 반영된 금액입니다.' + (pj.yr !== YR ? ' <b class="neg">지금 보는 연도(' + YR + '년)와 다릅니다.</b>' : '') + '</p>';
   box.innerHTML = h;
 }
 
@@ -5568,6 +5574,15 @@ const XP = (function(){
     sh.head = sh.head.replace(/<dimension ref="([^"]+)"/, (a, rg) => '<dimension ref="' + shiftRange(rg, R, k) + '"');
     sh.tail = sh.tail.replace(/<(autoFilter|mergeCell) ref="([^"]+)"/g, (a, t, rg) => '<' + t + ' ref="' + shiftRange(rg, R, k) + '"').replace(/sqref="([^"]+)"/g, (a, rg) => 'sqref="' + shiftRange(rg, R, k) + '"');
   }
+  /* 줄 지우기: R줄부터 k줄 (지우는 줄을 가리키는 수식은 없어야 함) */
+  function deleteRows(sh, R, k, sheetName){
+    const nr = new Map(), E = R + k;
+    sh.rows.forEach((x, r) => { if (r >= R && r < E) return; nr.set(r >= E ? r - k : r, r >= E ? renumber(x, r, r - k) : x); });
+    sh.rows = nr;
+    sh.rows.forEach((x, r) => { if (x.indexOf('<f') >= 0) sh.rows.set(r, x.replace(/(<f[^>]*>)([^<]*)(<\/f>)/g, (a, o, t, c) => o + esc(insShift(unesc(t), E, -k, true, sheetName)) + c)); });
+    sh.head = sh.head.replace(/<dimension ref="([^"]+)"/, (a, rg) => '<dimension ref="' + shiftRange(rg, E, -k) + '"');
+    sh.tail = sh.tail.replace(/<(autoFilter|mergeCell) ref="([^"]+)"/g, (a, t, rg) => '<' + t + ' ref="' + shiftRange(rg, E, -k) + '"').replace(/sqref="([^"]+)"/g, (a, rg) => 'sqref="' + shiftRange(rg, E, -k) + '"');
+  }
   /* 월 블록 찾기 */
   function findBlocks(sh, sst, textCol, first, outCol, mR){
     const bl = []; let prevN = first - 1, wol = 0; const L = outCol >= 0 ? colNm(outCol) : '';
@@ -5599,6 +5614,8 @@ const XP = (function(){
     };
     const sstX = byName.has('xl/sharedStrings.xml') ? await textOf(byName.get('xl/sharedStrings.xml')) : '';
     const sst = Array.from(sstX.matchAll(/<si>([\s\S]*?)<\/si>/g)).map(x => Array.from(x[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)).map(y => unesc(y[1])).join(''));
+    const stX = byName.has('xl/styles.xml') ? await textOf(byName.get('xl/styles.xml')) : '';
+    const xfFill = (() => { const m = /<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/.exec(stX); return m ? Array.from(m[1].matchAll(/<xf\b([^>]*)/g)).map(x => { const f = /fillId="(\d+)"/.exec(x[1]); return f ? +f[1] : 0; }) : []; })();
     const C = spec.cash, M = C.M, cashNm = C.sheet, cf = sheetFile(cashNm); if (!cf) throw new Error('시트 「' + cashNm + '」를 엑셀에서 찾지 못했습니다');
     let cashXml = await textOf(byName.get(cf)), newWb = wb; const mod = new Map();
     const stCol = M.cparts >= 0 ? M.cparts : (M.card >= 0 ? M.card + 1 : 9), cardCol = M.card >= 0 ? M.card : stCol - 1;
@@ -5618,6 +5635,7 @@ const XP = (function(){
     }
     const first = (C.first || 3), blocks = findBlocks(sh, sst, M.text, first, M.out, mR);
     const shiftBlocks = (R, k) => blocks.forEach(x => ['start', 'end', 'scan0', 'tail', 'wol', 'nu', 'prevNu'].forEach(f => { if (x[f] > 0 && x[f] >= R) x[f] += k; }));
+    const dropBlocks = (R, k) => blocks.forEach(x => ['start', 'end', 'scan0', 'tail', 'wol', 'nu', 'prevNu'].forEach(f => { if (x[f] > 0 && x[f] >= R + k) x[f] -= k; }));
     if (blocks.length < 12) throw new Error('현금출납 시트에서 월 칸(월 계·누 계)을 12개 찾지 못했습니다');
     const rd = r => cellsOf(sh.rows.get(r) || '');
     const rowInfo = (r) => {
@@ -5626,6 +5644,34 @@ const XP = (function(){
       return { c, st, keep: has && !st, blank: !has && !st, mon: g(M.mon), text: g(M.text), label: M.label >= 0 ? String(g(M.label)) : '', out: toN(g(M.out)), inn: M.inn >= 0 ? toN(g(M.inn)) : 0 };
     };
     const toN = v => typeof v === 'number' ? v : (Number(String(v).replace(/[,\s]/g, '')) || 0);
+    /* 합계 범위 끝 ~ 「월 계」 사이 정리: 지난번에 적은 결재중·품의만 줄과 남은 빈 줄은 지우고 구분 줄(주황 칸) 하나만 남김
+       (예전 버전은 결재중·품의만을 주황 줄 아래에 적었음 → 이번부터 주황 줄 위에 적음) */
+    rep.del = 0;
+    const zoneTidy = b => {
+      const Z0 = b.tail + 1, Z1 = b.wol - 1; if (Z1 < Z0) return;
+      const zr = [];
+      for (let r = Z0; r <= Z1; r++) {
+        const x = sh.rows.get(r) || '', cs = cellsOf(x), st = !!x && rowInfo(r).st; let empty = !st;
+        if (empty) cs.forEach(c => { if (c.inner) empty = false; });
+        zr.push({ r, st, empty, cs });
+      }
+      // 결재중 묶음과 품의만 묶음 사이 빈 줄
+      zr.forEach((z, i) => { if (z.empty && zr.slice(0, i).some(y => y.st) && zr.slice(i + 1).some(y => y.st)) z.gap = true; });
+      const cand = zr.filter(z => z.empty && !z.gap);
+      let sp = null;
+      if (cand.length > 1 && xfFill.length) {
+        const wf = new Set(); cellsOf(sh.rows.get(b.wol) || '').forEach(c => { const f = xfFill[+c.s || 0] || 0; if (f > 1) wf.add(f); });
+        const hit = cand.filter(z => Array.from(z.cs.values()).some(c => wf.has(xfFill[+c.s || 0] || 0)));
+        if (hit.length) sp = hit[hit.length - 1];
+      }
+      if (!sp && cand.length) sp = cand[0];
+      const del = zr.filter(z => z !== sp && (z.st || z.empty)).map(z => z.r);
+      if (!del.length) return;
+      if (Array.from(sh.tail.matchAll(/<mergeCell ref="[A-Z]+(\d+)(?::[A-Z]+(\d+))?"/g)).some(m => del.some(r => r >= +m[1] && r <= +(m[2] || m[1])))) return;
+      const runs = []; del.forEach(r => { const l = runs[runs.length - 1]; if (l && l[0] + l[1] === r) l[1]++; else runs.push([r, 1]); });
+      runs.reverse().forEach(([R, k]) => { deleteRows(sh, R, k, cashNm); dropBlocks(R, k); mod.set('shift', (mod.get('shift') || []).concat([[R + k, -k]])); rep.del += k; });
+    };
+    for (let bi = Math.min(12, blocks.length) - 1; bi >= 0; bi--) zoneTidy(blocks[bi]);
     /* 월별 할 일 */
     const adds = new Map(); (spec.adds || []).forEach(a => { if (!(a.m >= 1 && a.m <= 12)) return; (adds.get(a.m) || adds.set(a.m, []).get(a.m)).push(a); });
     const work = spec.work || []; let lastM = 0; blocks.forEach((b, bi) => { for (let r = b.scan0; r <= b.tail; r++) if (sh.rows.has(r) && rowInfo(r).keep) { lastM = bi + 1; break; } });
@@ -5667,7 +5713,7 @@ const XP = (function(){
     });
         for (const op of ops) {
       const m = op.m; let b = blocks[m - 1];
-      // 지난번에 적은 결재중·품의만 줄은 먼저 비움 (그 달 자리 전체 + 「월 계」 바로 위)
+      // 합계 범위 안에 남아 있는 결재중·품의만 줄은 비움 (범위 밖 줄은 위에서 지웠음)
       for (let r = b.scan0; r < b.wol; r++) { if (!sh.rows.has(r) || !rowInfo(r).st) continue; const e = new Map(); for (let i = 0; i <= Math.max(stCol, cardCol, M.bal, M.out); i++) e.set(i, { clear: true }); sh.rows.set(r, writeRow(sh.rows.get(r), r, e, null)); }
       // 이 블록 현재 상태
       const lastKeepOf = () => { let lk = b.start - 1, any = false; for (let r = b.start; r <= b.end; r++) { if (!sh.rows.has(r)) continue; const ri = rowInfo(r); if (ri.keep) { lk = r; any = true; } } return lk; };
@@ -5714,15 +5760,12 @@ const XP = (function(){
         }
         sh.rows.set(r, writeRow(sh.rows.get(r), r, e, tplSt)); r++;
       }
-      // 결재중·품의만: 합계 범위 아래로 빈 줄 하나 띄우고 「월 계」 바로 위에 적음 → 월계·누계·월말결산에 안 들어감
+      // 결재중·품의만: 이 달 합계 범위 바로 아래(주황 구분 줄 위)에 줄을 끼워 적음 → 월계·누계·월말결산에 안 들어감
       if (pl.length) {
-        const aS = b.tail + 2, need = aS + pl.length - b.wol;
-        if (need > 0) {
-          const R = b.wol, tpl = sh.rows.get(b.end) || sh.rows.get(b.start);
-          insertRows(sh, R, need, tpl, cashNm); rep.ins += need;
-          shiftBlocks(R, need);
-          mod.set('shift', (mod.get('shift') || []).concat([[R, need]]));
-        }
+        const aS = b.tail + 1, tpl = sh.rows.get(b.end) || sh.rows.get(b.start);
+        insertRows(sh, aS, pl.length, tpl, cashNm);
+        shiftBlocks(aS, pl.length);
+        mod.set('shift', (mod.get('shift') || []).concat([[aS, pl.length]]));
         let r2 = aS;
         for (const ln of pl) {
           const e = new Map(); for (let i = 0; i <= Math.max(stCol, cardCol, M.bal, M.out); i++) e.set(i, { clear: true });
@@ -6000,7 +6043,7 @@ async function xpExport(p){
     const be = await xpBudEdits(rec.u8, fs.bsrc, fs.ov, rec.applied), out = await XP.build(rec.u8, Object.assign({}, fs.spec, { bud: be }));
     const name = xpName(rec.name), saved = await saveBytes(name, out.u8), R = out.rep;
     if (saved !== false) { const ap = {}; fs.ov.forEach(o => { if (o.chu && Object.keys(o.chu).length) ap[o.label] = o.chu; }); await xbPut(p, { name, at: new Date().toISOString(), u8: out.u8, ids: fs.ids, chain: (rec.chain || 0) + 1, last: todayS(), applied: ap }); }
-    let m = FSHORT[p] + (rec.chain ? '(직전 갱신본 기준)' : '') + ': 이번에 새로 넣은 지출 완료 ' + R.added + '건' + (R.dup ? '(이미 있던 ' + R.dup + '건 제외)' : '') + (R.gy || R.pum ? ' · 결재중 ' + R.gy + '건 · 품의만 ' + R.pum + '건은 ' + R.month + '월 「월 계」 바로 위에 참고로 적었습니다(합계·월말결산에는 안 들어감)' : '');
+    let m = FSHORT[p] + (rec.chain ? '(직전 갱신본 기준)' : '') + ': 이번에 새로 넣은 지출 완료 ' + R.added + '건' + (R.dup ? '(이미 있던 ' + R.dup + '건 제외)' : '') + (R.gy || R.pum ? ' · 결재중 ' + R.gy + '건 · 품의만 ' + R.pum + '건은 ' + R.month + '월 내역 맨 아래(주황 줄 위)에 참고로 적었습니다(합계·월말결산에는 안 들어감)' : '');
     if (R.ins) m += ' (엑셀 칸이 모자라 ' + R.ins + '줄 늘림)';
     if (R.bud.length) m += ' · 월말결산 예산 ' + R.bud.length + '건 반영(당초·추경 칸에 나눠 넣고 총예산은 합계 수식 유지)';
     if (R.eFix) m += ' · 총예산 합계 수식 ' + R.eFix + '칸 복구';
@@ -6834,7 +6877,7 @@ function wire(){
   });
   $('#hd-lock').addEventListener('click', () => { location.reload(); });
   document.addEventListener('click', e => { if (e.target.closest('[data-export]')) exportLedger(); });
-  document.addEventListener('click', async e => { if (!e.target.closest('[data-xp]')) return; const r = await xpExport(FUND3.indexOf(PART) >= 0 ? PART : 'chul'); xpReport([r.msg]); });
+  document.addEventListener('click', async e => { if (!e.target.closest('[data-xp]')) return; const r = await xpExport(FUND3.indexOf(PART) >= 0 ? PART : 'chul'); if (r.ok && GH.cfg) await ghNow(); xpReport([r.msg]); });
   $('#imp-file').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
     $('#imp-name').textContent = f.name + ' 읽는 중…'; $('#imp-out').innerHTML = '';
