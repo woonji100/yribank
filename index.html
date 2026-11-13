@@ -1366,7 +1366,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v3.8', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank };
+  return { v: 3, at: new Date().toISOString(), ver: 'v3.9', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank };
 }
 function snapText(){ return '/* 통장 가계부 현황 자료 — 「현황 보기」 파일이 읽는 자료입니다. 직접 고치지 마세요. */\nwindow.__CCG_SNAP=' + JSON.stringify(snapBuild()) + ';\n'; }
 let shT = null;
@@ -1769,6 +1769,11 @@ function computeAgg(){
     j.kids.push(lf); leaf.set(it.label, lf);
     [d, j].forEach(x => { x.bud += bud; x.s9 += base; x.inp += i; for (let k = 0; k < 13; k++) x.mm[k] += mm[k]; });
   });
+  if (PART !== 'se') {
+    const wl = new Set(); (S.work || []).forEach(e => { if (entryYear(e) !== YR) return; const l = wkLabel(e); if (l) wl.add(l); });
+    dae.forEach(d => { let live = !!(d.bud || d.s9 || d.inp); if (!live) d.kids.forEach(j => j.kids.forEach(l => { if (l.custom || isDepo(l.name) || wl.has(l.name)) live = true; })); d.empty = !live; });
+    if (!Array.from(dae.values()).some(d => !d.empty)) dae.forEach(d => { d.empty = false; });
+  }
   const tot = { bud: 0, s9: 0, inp: 0, mm: Z13() };
   dae.forEach(d => { tot.bud += d.bud; tot.s9 += d.s9; tot.inp += d.inp; for (let k = 0; k < 13; k++) tot.mm[k] += d.mm[k]; });
   agg = { rows, dae, tot, unc, uncN, inc, exp, dep, inp, leaf };
@@ -1839,7 +1844,7 @@ function fillFilterSelects(){
   const m = $('#f-m'); if (m.options.length < 2) for (let i = 1; i <= 12; i++) m.add(new Option(i + '월', i));
   if (!$('#f-m').querySelector('option[value="0"]')) $('#f-m').add(new Option('월 미지정', '0'));
   const ds = $('#f-d'), cur = ds.value;
-  ds.innerHTML = '<option value="">대분류 전체</option>' + Array.from(agg.dae.keys()).concat(['수입']).map(d => '<option>' + esc(d) + '</option>').join('');
+  ds.innerHTML = '<option value="">대분류 전체</option>' + Array.from(agg.dae.values()).filter(d => !d.empty).map(d => d.name).concat(['수입']).map(d => '<option>' + esc(d) + '</option>').join('');
   ds.value = cur;
   fillJung();
 }
@@ -1847,7 +1852,7 @@ function fillJung(){
   const js = $('#f-j'), cur = js.value, d = $('#f-d').value;
   let opts = [];
   if (d && agg.dae.has(d)) opts = Array.from(agg.dae.get(d).kids.keys());
-  else if (!d) { const s = new Set(); agg.dae.forEach(x => x.kids.forEach((_, k) => s.add(k))); opts = Array.from(s); }
+  else if (!d) { const s = new Set(); agg.dae.forEach(x => !x.empty && x.kids.forEach((_, k) => s.add(k))); opts = Array.from(s); }
   js.innerHTML = '<option value="">중분류 전체</option>' + opts.map(j => '<option>' + esc(j) + '</option>').join('');
   js.value = opts.indexOf(cur) >= 0 ? cur : '';
   F.j = js.value;
@@ -2097,7 +2102,7 @@ function renderBudget(){
   const q = norm($('#b-q').value), body = $('#b-body');
   let h = '', cnt = 0;
   if (q) {
-    agg.dae.forEach(d => d.kids.forEach(j => j.kids.forEach(l => {
+    agg.dae.forEach(d => !d.empty && d.kids.forEach(j => j.kids.forEach(l => {
       if ((norm(d.name) + norm(j.name) + norm(l.name)).indexOf(q) < 0) return;
       cnt++; if (cnt > 400) return;
       h += '<tr class="lv2"' + lfA(l.name) + '><td style="padding-left:12px;color:var(--ink)">' + esc(l.name) + lfB(l.name) + (isDepo(l.name) ? ' <span class="chip" title="통장 사이 돈 이동이라 집행에 넣지 않습니다">집행 제외</span>' : '') + (l.custom ? ' <span class="chip">직접 추가</span>' : '') + '<span class="path-s">' + esc(d.name) + ' › ' + esc(j.name) + '</span></td>' + budCells(l) + '</tr>';
@@ -2106,6 +2111,7 @@ function renderBudget(){
     $('#b-info').textContent = cnt ? cnt + '개 항목' + (cnt > 400 ? ' (400개까지 표시)' : '') : '';
   } else {
     agg.dae.forEach(d => {
+      if (d.empty) return;
       const dk = d.name, dopen = open.has(dk);
       h += '<tr class="lv0"><td><button class="tg" data-t="' + esc(dk) + '" aria-expanded="' + dopen + '" aria-label="' + esc(d.name) + ' 펼치기">' + ico + '</button>' + esc(d.name) + '</td>' + budCells(d) + '</tr>';
       if (!dopen) return;
@@ -2421,7 +2427,7 @@ function setYear(y){ YR = y; lsSet('ccg:yr', String(y)); P.from = 1; P.to = curM
 const sumMm = (mm, a, b) => { let s = 0; for (let i = a; i <= b; i++) s += mm[i]; return s; };
 function nodesAt(level){
   const out = [];
-  agg.dae.forEach(d => { if (level === 1) out.push({ n: d, path: '' }); else d.kids.forEach(j => { if (level === 2) out.push({ n: j, path: d.name }); else j.kids.forEach(l => out.push({ n: l, path: d.name + ' › ' + j.name })); }); });
+  agg.dae.forEach(d => { if (d.empty) return; if (level === 1) out.push({ n: d, path: '' }); else d.kids.forEach(j => { if (level === 2) out.push({ n: j, path: d.name }); else j.kids.forEach(l => out.push({ n: l, path: d.name + ' › ' + j.name })); }); });
   return out;
 }
 function rateCell(sp, bud){
@@ -3972,7 +3978,7 @@ function withFund(p, fn){
 function fundStat(p){
   return withFund(p, () => {
     const t = agg.tot, dae = [];
-    agg.dae.forEach(d => dae.push({ name: d.name, bud: d.bud, sp: d.s9 + d.inp }));
+    agg.dae.forEach(d => { if (!d.empty) dae.push({ name: d.name, bud: d.bud, sp: d.s9 + d.inp }); });
     const yr = S.entries.filter(e => entryYear(e) === YR);
     return { p, ok: DATA.master.length > 0, bud: t.bud, base: t.s9, inp: t.inp, sp: t.s9 + t.inp, mm: t.mm.slice(), n: yr.length, unc: agg.uncN, cards: yr.filter(e => e.pay === 'card').length + (BASEY === YR ? (DATA.cash || []).filter(x => x[6] && x[6].length).length : 0),
       wp: S.work.filter(e => e.st === 'pum').length, wg: S.work.filter(e => e.st === 'gyeol').length, wsum: S.work.reduce((a, e) => a + (Number(e.a) || 0), 0), cut: CUT, file: DATA.src && DATA.src.file, at: DATA.src && DATA.src.at, dae, bank: bankNow(p), dep: depoNow(p), gap: gapNow(p, t.bud, t.s9 + t.inp) };
@@ -4045,6 +4051,7 @@ function projStat(){
     if (!DATA.master.length) return;
     const pb = new Map(); S.work.forEach(e => { const l = wkLabel(e); if (l) pb.set(l, (pb.get(l) || 0) + (Number(e.a) || 0)); });
     agg.leaf.forEach((lf, label) => {
+      if ((agg.dae.get(lf.dae) || {}).empty) return;
       const key = p === 'su' ? suKey : projKeyOfLabel(label); if (!key) return;
       let o = by.get(key); if (!o) { o = { lb: 0, sp: 0, pend: 0, items: [] }; by.set(key, o); }
       const rec = { p, label, bud: lf.bud, sp: spent(lf), pend: pb.get(label) || 0 };
@@ -6821,7 +6828,7 @@ function wire(){
   });
   $('#b-csv').addEventListener('click', () => {
     const rows = [['대분류', '중분류', '소분류', YR + '년 예산', '집행합계', '집행잔액', '집행률'].map(H)];
-    agg.dae.forEach(d => d.kids.forEach(j => j.kids.forEach(l => { const sp = spent(l); rows.push([d.name, j.name, l.name, N(l.bud), N(sp), N(l.bud - sp), l.bud ? PC(sp / l.bud) : '']); })));
+    agg.dae.forEach(d => !d.empty && d.kids.forEach(j => j.kids.forEach(l => { const sp = spent(l); rows.push([d.name, j.name, l.name, N(l.bud), N(sp), N(l.bud - sp), l.bud ? PC(sp / l.bud) : '']); })));
     const t = agg.tot, sp = spent(t), bk = bankNow(PART); rows.push([TB(bk != null ? '합계 (잔액은 통장 잔액)' : '합계'), '', '', TN(t.bud), TN(sp), TN(bk != null ? bk : t.bud - sp), t.bud ? PC(sp / t.bud) : '']);
     saveXlsx(fx() + '_분류별예산_' + YR + '.xlsx', [{ name: '분류별 예산표', freeze: 1, widths: [16, 18, 34, 15, 15, 15, 10], rows }]);
   });
