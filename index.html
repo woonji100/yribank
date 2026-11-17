@@ -189,6 +189,12 @@ td .sub2{display:block;font-size:11.5px;color:var(--muted)}
 tr.lv0 td{background:var(--accent-soft);font-weight:600;border-bottom:1px solid var(--axis)}
 tr.lv1 td{font-weight:500}
 tr.lv2 td:first-child{padding-left:44px;color:var(--ink2)}
+tr.ybn td{font-weight:500}
+tr.yb0 td{background:var(--accent-soft);font-weight:600;border-bottom:1px solid var(--axis)}
+tr.yb1 td{font-weight:600}
+tr.ybp td:first-child{color:var(--muted);font-weight:400;font-size:12.5px}
+tr.ybn .gcount{margin-left:6px;font-size:12px;font-weight:400;color:var(--muted)}
+.tg-sp{display:inline-block;width:20px;height:20px;margin-right:2px;vertical-align:middle}
 tr[data-lf]{cursor:pointer} tr[data-lf]:hover td{background:var(--zebra)}
 .lf-b{font:inherit;font-size:11.5px;line-height:1.5;padding:0 7px;margin-left:6px;border:1px solid var(--hair);border-radius:10px;background:var(--surface);color:var(--accent);cursor:pointer;vertical-align:1px}
 .lf-b:hover{border-color:var(--accent)}
@@ -536,7 +542,7 @@ body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,b
 
     <details class="card box alert al" id="o-alert-card" hidden><summary><h2 class="sec-h" id="o-alert-h">확인할 항목</h2> <span class="muted">— 예산 초과·거의 다 쓴 항목</span></summary><div id="o-alert" style="margin-top:10px"></div></details>
     <h2 class="sec-h ovsec" id="b-anchor">항목별 예산 · 집행 · 잔액</h2>
-    <p class="sec-p">대분류를 누르면 아래 항목이 펼쳐집니다. 항목(또는 「내역」)을 누르면 그 항목의 <b>지출 내역</b>이 나옵니다.</p>
+    <p class="sec-p" id="b-help">대분류를 누르면 아래 항목이 펼쳐집니다. 항목(또는 「내역」)을 누르면 그 항목의 <b>지출 내역</b>이 나옵니다.</p>
     <div class="filters">
       <input class="field q" id="b-q" type="search" placeholder="항목 검색 (대·중·소분류, 코드 포함, 띄어쓰기 무시)" aria-label="예산 항목 검색">
       <button class="btn sm" id="b-open">모두 펼치기</button>
@@ -1459,7 +1465,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v5.3', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v5.5', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
 }
 function closeMeta(){
   const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
@@ -2316,6 +2322,310 @@ async function saveXlsx(name, sheets){
   try { await dl.save({ filename: name, data: XL.build(sheets) }); }
   catch(e){ if (!e || e.code !== 'declined') toast('엑셀 내려받기를 시작하지 못했습니다'); }
 }
+/* ───────── 예산서 모양 (2026 세출예산서 2회추경 기준) ─────────
+   통장 현황 항목표를 예산서와 같은 순서로 보여 줌 (담당자 가계부 · 팀원 화면 같음):
+   기관 운영 › 인력운영비 › 사업비용 › 영업비용 › 일반관리비 › 인건비(목) › 보수(세목) › ○ › 항목
+   - 예산과목 이름으로 자리를 찾음. 표에 없는 항목은 같은 코드 항목이 있는 세목 맨 아래(없으면 원래 대분류 이름으로 맨 아래).
+   - 항목이 하나뿐인 ○, 이름이 같은 항목 하나만 있는 목 · 세목은 항목으로 바로 보임. 이름이 같은 한 단계(예비비 › 예비비)는 하나로.
+   - 아래가 하나뿐인 줄(관 · 항 · 세항 등)은 누르지 않아도 같이 펼쳐짐.
+   - 그 연도 표가 없으면 가장 가까운 앞 연도 표를 씀. 표가 없는 통장(수탁과제 · 세입세출외)은 예전처럼 대분류 › 중분류. */
+const YBOOK = {
+  2026: {
+    chul: [
+      ['기관 운영', [
+        ['인력운영비', [
+          ['사업비용 › 영업비용 › 일반관리비', [
+            ['인건비', [
+              ['보수', [
+                ['기본급(연구직)', ['101-01 원장', '101-01 연구위원', '101-01 부연구위원', '101-01 부연구위원(신규충원)']],
+                ['기본급(일반직)', ['101-01 일반직 6급', '101-01 일반직 7급', '101-01 일반직 8급', '101-01 일반직 9급']],
+                ['가족수당', ['101-01 가족수당', '101-01 가족수당(신규충원)']],
+                ['연구활동수당', ['101-01 연구활동수당', '101-01 연구활동수당(신규 연구직)']],
+                ['정액급식비', ['101-01 정액급식비', '101-01 정액급식비(신규충원)']],
+                ['정근수당(가산금 포함)', ['101-01 정근수당', '101-01 정근수당(신규 관리직)']],
+                ['행정운영수당(관리직)', ['101-01 행정운영수당(관리직)', '101-01 행정운영수당(신규 관리직)']],
+                ['명절휴가비', ['101-01 명절휴가비', '101-01 명절휴가비(신규 관리직)']],
+                ['연가보상비', ['101-01 연가보상비']],
+                ['시간외근무수당', ['101-01 시간외근무수당(관리직)', '101-01 시간외근무수당(신규 관리직)']]
+              ]],
+              ['기간제근로자보수', [
+                ['기본급', ['101-04 정책협력관', '101-04 위촉연구원', '101-04 행정원', '101-04 초빙연구위원']],
+                ['정액급식비', ['101-04 정액급식비(정책협력관, 행정원)', '101-04 정액급식비(위촉연구원)', '101-04 정액급식비(초빙연구위원)']],
+                ['연가보상비', ['101-04 연가보상비']],
+                ['시간외근무수당', ['101-04 시간외근무수당(위촉, 행정원)', '101-04 시간외근무수당(초빙연구위원)']],
+                ['가족수당', ['101-04 가족수당']]
+              ]]
+            ]],
+            ['퇴직급여', [
+              ['퇴직적립금', ['107-01 퇴직적립금']]
+            ]],
+            ['평가급', [
+              ['경영평가성과급(기관장)', ['109-00 경영평가성과급(기관장)']],
+              ['경영평가성과급(직원)', ['109-00 경영평가성과급(직원)']]
+            ]]
+          ]]
+        ]],
+        ['기본경비', [
+          ['사업비용 › 영업비용 › 일반관리비', [
+            ['일반운영비', [
+              ['사무관리비', [
+                ['일반수용비', ['201-01 부서운영수용비', '201-01 행정장비운영 소모품', '201-01 사원증 제작', '201-01 업무수첩 제작', '201-01 소프트웨어 구입(알툴즈, 웹한글기안기)', '201-01 예산서, 결산서 제작', '201-01 신문구독', '201-01 소액 수수료', '201-01 결산감사수수료', '201-01 변호료 수임료 및 보수', '201-01 세무사•노무사 수수료', '201-01 홍보물 제작']],
+                ['위원회 등 운영수당', ['201-01 위원회 참석수당', '201-01 직원채용심사수당', '201-01 이사회 참석수당']],
+                ['임차료', ['201-01 사무실 임차료', '201-01 업무용 차량 리스료(2대)', '201-01 장비 임차료(복사기)', '201-01 장비 임차료(정수기)', '201-01 장비 임차료(공기청정기)', '201-01 장비 임차료(비데)']]
+              ]],
+              ['공공운영비', [
+                ['공공요금 및 제세', ['201-02 우편요금', '201-02 주민세', '201-02 전화 통신요금', '201-02 보험료(회계관계직원 재정보험)', '201-02 부가가치세']],
+                ['차량선박비', ['201-02 차량 유지관리']]
+              ]],
+              ['교육훈련비', [
+                ['역량강화교육', ['213-00 역량강화교육']]
+              ]],
+              ['복리후생비', [
+                ['복리후생비', ['201-15 맞춤형 복지(정원내)', '201-15 맞춤형 복지(추가부양가족, 근속)', '201-15 맞춤형 복지(정원외)']],
+                ['직원 건강검진', ['201-15 직원건강검진']],
+                ['급량비', ['201-15 급량비']]
+              ]],
+              ['광고선전비', [
+                ['채용홍보', ['201-16 채용홍보']]
+              ]]
+            ]],
+            ['여비', [
+              ['국내여비', [
+                ['국내여비', ['202-01 국내여비']]
+              ]]
+            ]],
+            ['업무추진비', [
+              ['사업업무추진비', [
+                ['사업업무추진비', ['203-07 사업업무추진비']],
+                ['연구사업업무추진비', ['203-07 연구사업업무추진비']]
+              ]]
+            ]],
+            ['직무수행경비', [
+              ['직급보조비', [
+                ['직급보조비', ['204-01 직급보조비(원장)', '204-01 직급보조비(연구위원)', '204-01 직급보조비(부연구위원)', '204-01 직급보조비(신규충원)', '204-01 직급보조비(6급)', '204-01 직급보조비(7급)', '204-01 직급보조비(8급)', '204-01 직급보조비(정책협력관)', '204-01 직급보조비(행정원)', '204-01 직급보조비(위촉연구원)', '204-01 직급보조비(초빙연구위원)']],
+                ['직책급 업무수행경비', ['204-01 직책급 업무수행경비(원장)', '204-01 직책급 업무수행경비(실장)']]
+              ]],
+              ['특정업무경비', [
+                ['특정업무경비', ['204-2 특정업무경비', '204-2 특정업무경비(신규 관리직)']]
+              ]]
+            ]],
+            ['관서업무비', [
+              ['정원가산업무비', [
+                ['정원가산업무추진비', ['217-01 정원가산업무추진비']]
+              ]],
+              ['부서업무비', [
+                ['부서운영업무추진비', ['217-02 부서운영업무추진비']]
+              ]]
+            ]],
+            ['위탁관리비', [
+              ['사무실 관리비', ['220-00 사무실 관리비']],
+              ['그룹웨어 유지보수', ['220-00 그룹웨어 유지보수']],
+              ['회계, 자산 프로그램 유지보수', ['220-00 회계, 자산 프로그램 유지보수']],
+              ['홈페이지 유지보수', ['220-00 홈페이지 유지보수']],
+              ['전자결재시스템 서버이용료', ['220-00 전자결재시스템 서버이용료']],
+              ['정보통신장비 유지보수', ['220-00 정보통신장비 유지보수']],
+              ['무인경비시스템 유지관리', ['220-00 무인경비시스템 유지관리']]
+            ]],
+            ['기타협의체등부담금', [
+              ['연구원 협의회비', ['320-00 연구원 협의회비']]
+            ]]
+          ]],
+          ['자본적 지출 › 유형자산취득 › 기타유형자산', [
+            ['자산취득비', [
+              ['자산취득비', [
+                ['자산구입비(PC, 모니터 등)', ['405-01 자산구입비(PC, 모니터 등)']]
+              ]]
+            ]]
+          ]]
+        ]]
+      ]],
+      ['연구사업 운영', [
+        ['연구과제사업', [
+          ['사업비용 › 영업비용 › 목적사업비', [
+            ['연구개발비', [
+              ['연구용역비', [
+                ['정책연구사업', [/^\((정책|전략)\)/]],
+                ['기획연구사업', [/^\(기획\)/]],
+                ['현안연구사업(풀 예산)', ['207-01 현안연구사업(풀 예산)', /^\(현안\)/]],
+                ['연구과제 기획 및 현안분석사업(풀 예산)', ['207-01 연구과제 기획 및 현안분석사업(풀 예산)']]
+              ]]
+            ]]
+          ]]
+        ]],
+        ['연구부대사업', [
+          ['사업비용 › 영업비용 › 목적사업비', [
+            ['일반운영비', [
+              ['사무관리비', [
+                ['일반수용비', ['201-01 간행물 인쇄비', '201-01 인포그래픽 제작']]
+              ]],
+              ['행사운영비', [
+                ['지역현안토론회', ['201-01 지역현안토론회']]
+              ]],
+              ['회의비', [
+                ['연구기획 회의비', ['201-01 연구기획회의비']]
+              ]]
+            ]]
+          ]]
+        ]],
+        ['연구지원사업', [
+          ['사업비용 › 영업비용 › 목적사업비', [
+            ['일반운영비', [
+              ['사무관리비', [
+                ['일반수용비', ['201-01 소프트웨어 구입(기획팀)', '201-01 연구지원수용비', '201-01 학술DB검색서비스', '201-01 대외학술활동지원']],
+                ['위원회 운영 경비', ['201-01 연구자문위원회', '201-01 연구심의평가위원회', '201-01 연구과제 평가', '201-01 편집위원회', '201-01 위원회 회의비']]
+              ]]
+            ]]
+          ]]
+        ]]
+      ]],
+      ['예비비', [
+        ['예비비', [
+          ['사업비용 › 예비비 › 예비비', [
+            ['예비비', [
+              ['예비비', ['801-32 예비비']]
+            ]]
+          ]]
+        ]]
+      ]]
+    ],
+    iwol: [
+      ['기관 운영', [
+        ['인력운영비', [
+          ['사업비용 › 영업비용 › 일반관리비', [
+            ['인건비', [
+              ['보수', [
+                ['기본급(연구직)', ['101-01 연구위원', '101-01 부연구위원']],
+                ['기본급(일반직)', ['101-01 6급', '101-01 7급', '101-01 8급']],
+                ['정액급식비', ['101-01 정액급식비']],
+                ['행정운영수당(관리직)', ['101-01 행정운영수당(관리직)']]
+              ]],
+              ['기간제근로자보수', [
+                ['연가보상비', ['101-04 연가보상비']]
+              ]]
+            ]],
+            ['퇴직급여', [
+              ['퇴직적립금', ['107 퇴직급여']]
+            ]],
+            ['평가급', [
+              ['경영평가성과급(기관장)', ['109 경영평가성과급(기관장)']],
+              ['경영평가성과급(직원)', ['109 경영평가성과급(직원)']]
+            ]]
+          ]]
+        ]],
+        ['기본경비', [
+          ['사업비용 › 영업비용 › 일반관리비', [
+            ['일반운영비', [
+              ['사무관리비', [
+                ['임차료', ['201-01 임차료(장비임차료)']],
+                ['청사 관련 비용', ['201-01 소규모 용역비']]
+              ]],
+              ['공공운영비', [
+                ['공공요금 및 제세', ['201-02 부가가치세']]
+              ]]
+            ]],
+            ['여비', [
+              ['국내여비', [
+                ['국내여비', ['202-01 국내여비']]
+              ]],
+              ['국외업무여비', [
+                ['국외업무여비', ['202-03 국외업무여비']]
+              ]]
+            ]],
+            ['위탁관리비', [
+              ['사무실 관리비', ['220 사무실 관리비']],
+              ['홈페이지 유지보수', ['220 홈페이지 유지보수']]
+            ]],
+            ['연금부담금 등', [
+              ['연금부담금', [
+                ['사회보험 부담금', ['304-01 국민연금', '304-01 건강보험료', '304-01 고용보험료', '304-01 산재보험료']]
+              ]]
+            ]],
+            ['기타협의체등부담금', [
+              ['연구원 협의회비', ['320 연구원 협의회비']]
+            ]]
+          ]]
+        ]]
+      ]],
+      ['연구사업 운영', [
+        ['연구과제사업', [
+          ['사업비용 › 영업비용 › 목적사업비', [
+            ['연구개발비', [
+              ['연구용역비', [
+                ['이월 연구사업', ['207-01 이월연구 용역비(미배정액)', /^\((현안|기획|정책|전략)\)/]]
+              ]]
+            ]]
+          ]]
+        ]]
+      ]]
+    ]
+  }
+};
+const B_HELP = '대분류를 누르면 아래 항목이 펼쳐집니다. 항목(또는 「내역」)을 누르면 그 항목의 <b>지출 내역</b>이 나옵니다.';
+const YB_HELP = '예산서와 같은 순서로 펼쳐집니다 — 기관 운영 › 인력운영비 › 사업비용 › 영업비용 › 일반관리비 › 인건비 › 보수 › ○(예: 기본급) › 항목. 항목(또는 「내역」)을 누르면 그 항목의 <b>지출 내역</b>이 나옵니다.';
+const ybHit = (m, s) => typeof m === 'string' ? m === s : m.test(s);
+const ybFlat = s => String(s).replace(/^\d{3}(?:-\d{1,2})?\s+/, '').replace(/[\s()·,.•]/g, '');
+function ybTable(){ const ys = Object.keys(YBOOK).map(Number).filter(y => y <= YR).sort((a, b) => b - a); return ys.length ? (YBOOK[ys[0]][PART] || null) : null; }
+/* 지금 통장 · 연도의 예산서 나무 → [{ n: 묶음 } | { l: 항목 }] (표가 없으면 null) */
+function ybTree(){
+  const T = ybTable(); if (!T || !agg) return null;
+  const leaves = [];
+  const mk = (src, par) => { const n = { name: src[0], ch: [], par, og: false, ms: null }; const c = src[1] || []; if (c.length && Array.isArray(c[0])) n.ch = c.map(x => ({ n: mk(x, n) })); else { n.ms = c; n.og = true; leaves.push(n); } return n; };
+  const roots = T.map(x => ({ n: mk(x, null) }));
+  const codeOf = t => { const m = /^(\d{3})(?:-(\d{1,2}))?\s/.exec(t); return m ? { c: m[1] + (m[2] ? '-' + m[2] : ''), m: m[1] } : null; };
+  const firstBy = f => leaves.find(n => n.ms.some(m => { if (typeof m !== 'string') return false; const x = codeOf(m); return !!x && f(x); }));
+  const extra = new Map();
+  agg.dae.forEach(d => { if (d.empty) return; d.kids.forEach(j => j.kids.forEach(l => {
+    const g = leaves.find(n => n.ms.some(m => ybHit(m, l.name)));
+    if (g) { g.ch.push({ l }); return; }
+    const c = codeOf(l.name), f = c ? (firstBy(x => x.c === c.c) || firstBy(x => x.m === c.m)) : null;
+    if (f && f.par) { f.par.ch.push({ l }); return; }
+    let x = extra.get(d.name); if (!x) { x = { name: d.name, ch: [], par: null, og: false }; extra.set(d.name, x); roots.push({ n: x }); }
+    let y = x.ch.find(e => e.n && e.n.name === j.name); if (!y) { y = { n: { name: j.name, ch: [], par: x, og: false } }; x.ch.push(y); }
+    y.n.ch.push({ l });
+  })); });
+  const fix = e => {
+    if (e.l) return e;
+    const n = e.n;
+    n.ch = n.ch.map(fix).filter(Boolean);
+    if (!n.ch.length) return null;
+    if (n.ch.length === 1 && n.ch[0].n && ybFlat(n.ch[0].n.name) === ybFlat(n.name)) { const c = n.ch[0].n; n.ch = c.ch; n.og = c.og; }
+    n.bud = 0; n.s9 = 0; n.inp = 0;
+    n.ch.forEach(x => { const v = x.l || x.n; n.bud += v.bud; n.s9 += v.s9; n.inp += v.inp; });
+    if (n.ch.length === 1 && n.ch[0].l && (n.og || ybFlat(n.ch[0].l.name) === ybFlat(n.name))) return n.ch[0];
+    return e;
+  };
+  return roots.map(fix).filter(Boolean);
+}
+const ybPath = ns => ns.filter(t => t.indexOf(' › ') < 0).join(' › ');
+function ybWalk(ents, fn, names){ names = names || []; ents.forEach(e => { if (e.l) fn(e.l, names); else ybWalk(e.n.ch, fn, names.concat(e.n.name)); }); }
+function ybKeys(ents, key, out){ out = out || []; key = key || '§'; ents.forEach(e => { if (!e.n) return; const k = key + '|' + e.n.name; out.push(k); ybKeys(e.n.ch, k, out); }); return out; }
+function ybPathOf(ents, label){ let r = ''; ybWalk(ents, (l, ns) => { if (!r && l.name === label) r = ybPath(ns); }); return r; }
+function ybRender(BT, q){
+  let h = '';
+  const P = d => 10 + d * 18;
+  const chips = l => (isDepo(l.name) ? ' <span class="chip" title="통장 사이 돈 이동이라 집행에 넣지 않습니다">집행 제외</span>' : '') + (l.custom ? ' <span class="chip">직접 추가</span>' : '');
+  if (q) {
+    let cnt = 0;
+    ybWalk(BT, (l, ns) => {
+      if ((norm(ns.join('')) + norm(l.name)).indexOf(q) < 0) return;
+      cnt++; if (cnt > 400) return;
+      const p = ybPath(ns);
+      h += '<tr class="lv2"' + lfA(l.name) + '><td style="padding-left:12px;color:var(--ink)">' + esc(l.name) + lfB(l.name) + chips(l) + (p ? '<span class="path-s">' + esc(p) + '</span>' : '') + '</td>' + budCells(l) + '</tr>';
+    });
+    if (!cnt) h = '<tr><td colspan="5" class="empty">검색 결과가 없습니다.</td></tr>';
+    $('#b-info').textContent = cnt ? cnt + '개 항목' + (cnt > 400 ? ' (400개까지 표시)' : '') : '';
+    return h;
+  }
+  const rec = (ents, d, key) => ents.forEach(e => {
+    if (e.l) { h += '<tr class="lv2"' + lfA(e.l.name) + '><td style="padding-left:' + (P(d) + 22) + 'px">' + esc(e.l.name) + lfB(e.l.name) + chips(e.l) + '</td>' + budCells(e.l) + '</tr>'; return; }
+    const n = e.n, k = key + '|' + n.name, only = ents.length === 1, op = only || open.has(k), ph = n.name.indexOf(' › ') >= 0, ni = n.og ? n.ch.length : 0;
+    h += '<tr class="ybn yb' + Math.min(d, 2) + (ph ? ' ybp' : '') + '"><td style="padding-left:' + P(d) + 'px">' + (only ? '<span class="tg-sp"></span>' : '<button class="tg" data-t="' + esc(k) + '" aria-expanded="' + op + '" aria-label="' + esc(n.name) + ' 펼치기">' + ico + '</button>') + esc(n.name) + (ni > 1 ? '<span class="gcount">' + ni + '개</span>' : '') + '</td>' + budCells(n) + '</tr>';
+    if (op) rec(n.ch, d + 1, k);
+  });
+  rec(BT, 0, '§');
+  $('#b-info').textContent = '';
+  return h;
+}
 /* ───────── 예산표 ───────── */
 const open = new Set();
 const ico = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1l5 4-5 4z" fill="currentColor"/></svg>';
@@ -2329,7 +2639,10 @@ function budCells(n, bk){
 function renderBudget(){
   const q = norm($('#b-q').value), body = $('#b-body');
   let h = '', cnt = 0;
-  if (q) {
+  const BT = ybTree();
+  { const hp = $('#b-help'); if (hp) hp.innerHTML = BT ? YB_HELP : B_HELP; }
+  if (BT) h = ybRender(BT, q);
+  else if (q) {
     agg.dae.forEach(d => !d.empty && d.kids.forEach(j => j.kids.forEach(l => {
       if ((norm(d.name) + norm(j.name) + norm(l.name)).indexOf(q) < 0) return;
       cnt++; if (cnt > 400) return;
@@ -2383,7 +2696,8 @@ function lfData(p, label){
     });
     done.sort((x, y) => (x.m || 13) - (y.m || 13) || x.d - y.d || (x.src === y.src ? 0 : x.src === '원본 장부' ? -1 : 1));
     pend.sort((x, y) => (x.st === y.st ? 0 : x.st === 'gyeol' ? -1 : 1) || (x.at < y.at ? -1 : x.at > y.at ? 1 : 0));
-    return { lf, sp: spent(lf), done, pend };
+    const BT = ybTree();
+    return { lf, sp: spent(lf), done, pend, bp: BT ? ybPathOf(BT, label) : '' };
   });
 }
 function lfDetail(p, label){
@@ -2395,7 +2709,7 @@ function lfDetail(p, label){
   const kp = (l, v, sub, neg) => '<div class="kpi"><div class="l">' + l + '</div><div class="v' + (neg ? ' neg' : '') + '">' + v + '</div>' + (sub ? '<div class="s">' + sub + '</div>' : '') + '</div>';
   let h = '<div class="card box" role="dialog" aria-modal="true" aria-labelledby="lf-h" style="width:min(780px,100%);max-height:90vh;overflow:auto;background:var(--surface)">' +
     '<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:nowrap"><div style="min-width:0"><h2 class="sec-h" id="lf-h" style="margin:0">' + esc(label) + '</h2>' +
-    '<div class="muted" style="margin-top:2px">' + esc(FSHORT[p] || '') + ' · ' + YR + '년 · ' + esc(lf.dae || '') + (lf.jung && lf.jung !== lf.dae ? ' › ' + esc(lf.jung) : '') + '</div></div><button class="btn sm" type="button" data-lfx="1">닫기</button></div>' +
+    '<div class="muted" style="margin-top:2px">' + esc(FSHORT[p] || '') + ' · ' + YR + '년 · ' + (D.bp ? esc(D.bp) : esc(lf.dae || '') + (lf.jung && lf.jung !== lf.dae ? ' › ' + esc(lf.jung) : '')) + '</div></div><button class="btn sm" type="button" data-lfx="1">닫기</button></div>' +
     '<section class="kpis" aria-label="항목 요약">' + kp('예산액', lf.bud ? fmt(lf.bud) : '–') + kp('집행액', fmt(sp), lf.bud ? '집행률 ' + (sp / lf.bud * 100).toFixed(1) + '%' : '') + kp('집행잔액', fmt(rest), '', rest < 0) + (VIEW ? kp('지출 건수', done.length + '건', YR + '년 지출 완료') : kp('진행 중', pend.length ? fmt(psum2) : '–', pend.length ? '품의·결재중 ' + pend.length + '건' : '')) + '</section>' +
     '<div class="muted">상반기(1~6월) <b class="num">' + fmt(half(1, 6)) + '</b>원 · 하반기(7~12월) <b class="num">' + fmt(half(7, 12)) + '</b>원</div>';
   h += '<h3 class="sec-h" style="font-size:14px;margin:16px 0 6px">지출 완료 ' + done.length + '건' + (done.length ? ' · ' + fmt(dsum) + '원' : '') + '</h3>';
@@ -7115,7 +7429,7 @@ function wire(){
     if (e.target.closest('[data-unc]')) showUnc();
   });
   $('#b-q').addEventListener('input', renderBudget);
-  $('#b-open').addEventListener('click', () => { $('#b-q').value = ''; agg.dae.forEach(d => { open.add(d.name); d.kids.forEach(j => open.add(d.name + '|' + j.name)); }); renderBudget(); });
+  $('#b-open').addEventListener('click', () => { $('#b-q').value = ''; agg.dae.forEach(d => { open.add(d.name); d.kids.forEach(j => open.add(d.name + '|' + j.name)); }); { const BT = ybTree(); if (BT) ybKeys(BT).forEach(k => open.add(k)); } renderBudget(); });
   $('#b-close').addEventListener('click', () => { open.clear(); $('#b-q').value = ''; renderBudget(); });
   $('#b-body').addEventListener('click', e => {
     const b = e.target.closest('.tg');
