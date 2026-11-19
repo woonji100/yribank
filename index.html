@@ -1465,7 +1465,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v5.5', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v5.7', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
 }
 function closeMeta(){
   const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
@@ -4269,16 +4269,17 @@ function fcAll(){
 function renderFc(){
   const box = $('#fc-body'); if (!box) return;
   const C = fcAll(), M = C.M;
-  let h = '<p class="sec-p" style="margin-bottom:8px"><b>예산 부족 예측</b> — 매달 비슷하게 나가는 돈(급여·직급보조비 등)을 지난 3개월 지급 흐름으로 찾아, 남은 달에도 같은 금액이 나간다고 보고 언제 예산이 모자라는지 계산합니다. ' + (VIEW ? '지출이 끝난 금액만으로 계산하고, ' : '작업창에 올려 둔 품의·결재중 금액은 이미 쓸 돈으로 빼고, ') + '이번 달에 이미 지급한 금액은 중복해서 빼지 않습니다.</p>';
+  let h = VIEW ? '' : '<p class="sec-p" style="margin-bottom:8px"><b>예산 부족 예측</b> — 매달 비슷하게 나가는 돈(급여·직급보조비 등)을 지난 3개월 지급 흐름으로 찾아, 남은 달에도 같은 금액이 나간다고 보고 언제 예산이 모자라는지 계산합니다. ' + (VIEW ? '지출이 끝난 금액만으로 계산하고, ' : '작업창에 올려 둔 품의·결재중 금액은 이미 쓸 돈으로 빼고, ') + '이번 달에 이미 지급한 금액은 중복해서 빼지 않습니다.</p>';
   if (M < 1) { box.innerHTML = h + '<div class="card box muted">' + YR + '년은 아직 시작 전이라 예측할 지출 흐름이 없습니다.</div>'; return; }
   if (M > 12) { box.innerHTML = h + '<div class="card box muted">' + YR + '년은 지난 연도라 예측하지 않습니다. 위쪽에서 올해를 고르세요.</div>'; return; }
   if (!C.rows.length) { box.innerHTML = h + '<div class="card box muted">엑셀을 불러온 기금이 없습니다.</div>'; return; }
   const qn = norm(FC.q || ''), view = C.rows.filter(r => (!FC.fund || r.p === FC.fund) && (!qn || norm(r.label + r.jung + r.dae).indexOf(qn) >= 0));
   const sh = view.filter(r => r.st === 'short'), wn = view.filter(r => r.st === 'warn'), tot = sh.reduce((a, r) => a + r.need, 0);
-  h += '<section class="kpis"><div class="kpi"><div class="l">부족이 예상되는 항목</div><div class="v ' + (sh.length ? 'neg' : '') + '">' + sh.length + '개</div><div class="s">12월 안에 예산이 바닥남</div></div>' +
+  const fcKp = x => VIEW ? x.replace(/<div class="s">[^<]*<\/div>/g, '') : x;
+  h += fcKp('<section class="kpis"><div class="kpi"><div class="l">부족이 예상되는 항목</div><div class="v ' + (sh.length ? 'neg' : '') + '">' + sh.length + '개</div><div class="s">12월 안에 예산이 바닥남</div></div>' +
     '<div class="kpi"><div class="l">예상 부족 합계</div><div class="v ' + (tot ? 'neg' : '') + '">' + fmt(tot) + '</div><div class="s">연말까지 더 필요한 금액</div></div>' +
     '<div class="kpi"><div class="l">주의 (여유 한 달 미만)</div><div class="v">' + wn.length + '개</div><div class="s">연말 잔액이 한 달치보다 적음</div></div>' +
-    '<div class="kpi"><div class="l">기준</div><div class="v" style="font-size:16px">' + YR + '년 ' + M + '월</div><div class="s">' + (M > 2 ? Math.max(1, M - 3) + '~' + (M - 1) + '월 지출 흐름' : '지출 흐름이 부족합니다') + '</div></div></section>';
+    '<div class="kpi"><div class="l">기준</div><div class="v" style="font-size:16px">' + YR + '년 ' + M + '월</div><div class="s">' + (M > 2 ? Math.max(1, M - 3) + '~' + (M - 1) + '월 지출 흐름' : '지출 흐름이 부족합니다') + '</div></div></section>');
   h += '<div class="fc-funds" role="group" aria-label="통장 고르기">' + [''].concat(FUND3).map(p => {
     const rs = C.rows.filter(r => !p || r.p === p), sr = rs.filter(r => r.st === 'short'), n2 = rs.filter(r => r.st === 'warn').length;
     return '<button class="btn" data-fcf="' + p + '" aria-pressed="' + ((FC.fund || '') === p) + '"><b>' + (p ? esc(FSHORT[p]) : '전체 통장') + '</b><span class="sm2">' + (sr.length ? '부족 ' + sr.length + '개 · ' + fmt(sr.reduce((a, r) => a + r.need, 0)) + '원' : '부족 없음') + (n2 ? ' · 주의 ' + n2 + '개' : '') + '</span></button>';
@@ -4291,23 +4292,23 @@ function renderFc(){
   show.sort((a, b) => { const o = { short: 0, warn: 1, ok: 2, none: 3 }; return o[a.st] - o[b.st] || (a.first || 99) - (b.first || 99) || b.need - a.need; });
   if (!show.length) h += '<div class="card box">' + (FC.all ? '조건에 맞는 항목이 없습니다.' : '<span class="chip">✔</span> 지금 흐름대로면 연말까지 예산이 모자라는 항목이 없습니다.') + '</div>';
   else {
-    h += '<div class="tw"><table><thead><tr><th>기금</th><th>예산과목</th><th class="r">예산</th>' + (VIEW ? '<th class="r">집행</th>' : '<th class="r">집행 + 진행중</th>') + '<th class="r">현재 잔액</th><th class="r">월 예상 지출</th><th>부족 시점</th><th class="r">12월말 예상 잔액</th><th>이전 후보</th></tr></thead><tbody>';
+    h += '<div class="tw"><table><thead><tr><th>기금</th><th>예산과목</th><th class="r">예산</th>' + (VIEW ? '<th class="r">집행</th>' : '<th class="r">집행 + 진행중</th>') + '<th class="r">현재 잔액</th><th class="r">월 예상 지출</th><th>부족 시점</th><th class="r">12월말 예상 잔액</th>' + (VIEW ? '' : '<th>이전 후보</th>') + '</tr></thead><tbody>';
     show.forEach(r => {
       const key = r.p + '|' + r.label, rest = r.bud - r.sp - r.pd;
       const chip = r.st === 'short' ? '<span class="chip c">' + r.first + '월 부족</span>' : r.st === 'warn' ? '<span class="chip w">주의</span>' : r.st === 'ok' ? '<span class="chip">여유</span>' : '<span class="muted">예측 안 함</span>';
-      h += '<tr><td>' + esc(FSHORT[r.p]) + '</td><td><button class="lk" data-fco="' + esc(key) + '" style="text-align:left">' + esc(r.label) + '</button></td><td class="r">' + fmt(r.bud) + '</td><td class="r">' + fmt(r.sp) + (r.pd ? ' <span class="muted">+' + fmt(r.pd) + '</span>' : '') + '</td><td class="r ' + (rest < 0 ? 'neg' : '') + '">' + fmt(rest) + '</td><td class="r">' + (r.use ? fmt(r.use) + '<span class="sub2">' + esc(r.how) + '</span>' : '') + '</td><td>' + chip + '</td><td class="r ' + (r.end < 0 ? 'neg' : '') + '">' + (r.use ? fmt(r.end) : '') + '</td><td>';
-      if (r.st === 'short') {
+      h += '<tr><td>' + esc(FSHORT[r.p]) + '</td><td><button class="lk" data-fco="' + esc(key) + '" style="text-align:left">' + esc(r.label) + '</button></td><td class="r">' + fmt(r.bud) + '</td><td class="r">' + fmt(r.sp) + (r.pd ? ' <span class="muted">+' + fmt(r.pd) + '</span>' : '') + '</td><td class="r ' + (rest < 0 ? 'neg' : '') + '">' + fmt(rest) + '</td><td class="r">' + (r.use ? fmt(r.use) + (VIEW ? '' : '<span class="sub2">' + esc(r.how) + '</span>') : '') + '</td><td>' + chip + '</td><td class="r ' + (r.end < 0 ? 'neg' : '') + '">' + (r.use ? fmt(r.end) : '') + '</td>' + (VIEW ? '' : '<td>');
+      if (!VIEW && r.st === 'short') {
         if (r.donor) h += '<span style="font-size:12.5px">' + esc(r.donor.label) + ' <span class="muted">옮길 수 있는 여유 ' + fmt(r.dsp) + (r.didle ? ' · 최근 3개월 지출 없음' : '') + '</span></span> '; else h += '<span class="muted" style="font-size:12.5px">같은 분류에 여유가 있는 항목 없음</span> ';
         h += '<button class="btn sm" data-fcx="' + esc(r.p + '|' + (r.donor ? r.donor.label : '') + '|' + r.label + '|' + Math.ceil(r.need)) + '">예산 옮기기</button>';
       }
-      h += '</td></tr>';
+      h += (VIEW ? '' : '</td>') + '</tr>';
       if (FC.open === key) {
-        h += '<tr><td colspan="9" style="background:var(--zebra)"><div class="tw"><table><thead><tr><th>월</th>' + r.path.map((v, i) => '<th class="r">' + (M + i) + '월 지급 후</th>').join('') + '</tr></thead><tbody><tr><td>예상 잔액</td>' + r.path.map(v => '<td class="r ' + (v < 0 ? 'neg' : '') + '">' + fmt(v) + '</td>').join('') + '</tr></tbody></table></div><div class="muted" style="font-size:12px;margin-top:4px">최근 월별 지출: ' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter(k => k <= M).map(k => k + '월 ' + fmt(r.mm[k] || 0)).join(' · ') + '</div></td></tr>';
+        h += '<tr><td colspan="' + (VIEW ? 8 : 9) + '" style="background:var(--zebra)"><div class="tw"><table><thead><tr><th>월</th>' + r.path.map((v, i) => '<th class="r">' + (M + i) + '월 지급 후</th>').join('') + '</tr></thead><tbody><tr><td>예상 잔액</td>' + r.path.map(v => '<td class="r ' + (v < 0 ? 'neg' : '') + '">' + fmt(v) + '</td>').join('') + '</tr></tbody></table></div>' + (VIEW ? '' : '<div class="muted" style="font-size:12px;margin-top:4px">최근 월별 지출: ' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter(k => k <= M).map(k => k + '월 ' + fmt(r.mm[k] || 0)).join(' · ') + '</div>') + '</td></tr>';
       }
     });
     h += '</tbody></table></div>';
   }
-  h += '<p class="muted" style="margin-top:10px;font-size:12px">※ 예측은 최근 흐름을 이어 본 추정입니다. 상여·명절휴가비·정근수당처럼 특정 달에만 나가는 돈, 이번 달 신규 입사·퇴사, 소급 지급은 반영되지 않습니다. 이전 후보는 같은 분류에서 연말에도 한 달치 이상 남는 항목을 골랐고, 여러 항목이 같은 후보를 쓰면 여유를 나누어 계산했습니다. 불규칙 지출이 따로 있는지는 확인이 필요합니다.</p>';
+  if (!VIEW) h += '<p class="muted" style="margin-top:10px;font-size:12px">※ 예측은 최근 흐름을 이어 본 추정입니다. 상여·명절휴가비·정근수당처럼 특정 달에만 나가는 돈, 이번 달 신규 입사·퇴사, 소급 지급은 반영되지 않습니다. 이전 후보는 같은 분류에서 연말에도 한 달치 이상 남는 항목을 골랐고, 여러 항목이 같은 후보를 쓰면 여유를 나누어 계산했습니다. 불규칙 지출이 따로 있는지는 확인이 필요합니다.</p>';
   box.innerHTML = h;
 }
 function wireFc(){
@@ -4439,7 +4440,7 @@ function syncHead(){
   if (tab === 'all') { a = VIEW ? VTITLE : '통장 가계부'; b = VIEW ? '용인시정연구원 · 출연금 · 이월출연금 · 수탁과제' : '용인시정연구원 · 출연금·이월출연금·수탁과제 전체 현황'; }
   else if (tab === 'overview') { a = FH[PART] + ' 현황'; }
   else if (tab === 'proj') { a = '과제별 현황'; b = '용인시정연구원 · 실·과제별 예산과 집행 (세 통장 합산)'; }
-  else if (tab === 'fc') { a = '예산 부족 예측'; b = '용인시정연구원 · 남은 예산이 언제 모자랄지 세 통장을 한꺼번에 봅니다'; }
+  else if (tab === 'fc') { a = '예산 부족 예측'; b = VIEW ? '용인시정연구원' : '용인시정연구원 · 남은 예산이 언제 모자랄지 세 통장을 한꺼번에 봅니다'; }
   else if (tab === 'pay') { a = '급여'; b = '용인시정연구원 · 급여대장 → 예산과목별 나누기 · 급여 지출결의 합계'; }
   else if (tab === 'card') { a = '법인카드 대조'; b = '출연금·이월출연금·수탁과제의 법인카드 사용분을 결제일 기준으로 모아 명세서와 맞춰 봅니다'; }
   else if (SUBS.indexOf(tab) >= 0 && tab !== 'etc') { a = '관리'; b = '용인시정연구원 · 출연금·이월출연금·수탁과제의 장부·예산·설정을 한곳에서'; }
@@ -5958,6 +5959,16 @@ const XP = (function(){
       return { c, st, keep: has && !st, blank: !has && !st, mon: g(M.mon), text: g(M.text), label: M.label >= 0 ? String(g(M.label)) : '', out: toN(g(M.out)), inn: M.inn >= 0 ? toN(g(M.inn)) : 0 };
     };
     const toN = v => typeof v === 'number' ? v : (Number(String(v).replace(/[,\s]/g, '')) || 0);
+    /* 안전 확인: 이름(수입·지출○월누계)이 「누 계」 줄을 가리키는지, 「월 계」 줄 수가 그대로인지 */
+    const MNUM = { '일': 1, '이': 2, '삼': 3, '사': 4, '오': 5, '유': 6, '칠': 7, '팔': 8, '구': 9, '시': 10, '십': 10, '십일': 11, '십이': 12 };
+    const nuBad = wbx => { const bad = []; for (const m of wbx.matchAll(/<definedName [^>]*name="([^"]*누계)"[^>]*>([^<]*)<\/definedName>/g)) { const ref = unesc(m[2]), mm = /^'?(.+?)'?!\$?[A-Z]+\$?(\d+)$/.exec(ref); if (!mm || mm[1].replace(/''/g, "'") !== cashNm) continue; if (norm(String(rowInfo(+mm[2]).text)) !== '누계') bad.push(m[1]); } return bad; };
+    const wolN = () => { let n = 0; sh.rows.forEach((x, r) => { if (norm(String(rowInfo(r).text)) === '월계') n++; }); return n; };
+    const monOf = nm => { const m = /^(?:수입|지출)(.+)월누계$/.exec(nm); return m && MNUM[m[1]] ? MNUM[m[1]] + '월 ' : ''; };
+    // 합계 범위 끝 ~ 「월 계」 사이에 날짜 있는 지출 줄이 있으면 = 합계에 안 들어간 지출 (엑셀이 어긋난 것)
+    const outRow = () => { for (let bi = 0; bi < Math.min(12, blocks.length); bi++) { const b = blocks[bi]; for (let r = b.tail + 1; r < b.wol; r++) { if (!sh.rows.has(r)) continue; const ri = rowInfo(r); if (ri.keep && String(ri.mon).trim() !== '') return { m: bi + 1, r }; } } return null; };
+    { const bad = nuBad(wb); if (bad.length) throw new Error('기준 엑셀이 망가져 있습니다(' + monOf(bad[0]) + '「누 계」 줄이 없어짐). 마감 창의 「내가 고친 엑셀로 바꾸기」로 정상인 엑셀을 골라 주세요'); }
+    { const o = outRow(); if (o) throw new Error('기준 엑셀이 어긋나 있습니다(' + o.m + '월 「월 계」 바로 위 ' + o.r + '행 지출이 합계에 안 들어감). 마감 창의 「내가 고친 엑셀로 바꾸기」로 정상인 엑셀을 골라 주세요'); }
+    const wol0 = wolN();
     /* 합계 범위 끝 ~ 「월 계」 사이 정리: 지난번에 적은 결재중·품의만 줄과 남은 빈 줄은 지우고 구분 줄(주황 칸) 하나만 남김
        (예전 버전은 결재중·품의만을 주황 줄 아래에 적었음 → 이번부터 주황 줄 위에 적음) */
     rep.del = 0;
@@ -6044,12 +6055,19 @@ const XP = (function(){
       }
       const cap = b.end - lk;
       if (lines.length > cap) {
-        const need = lines.length - cap;
+        const need = lines.length - cap, full = lk === b.end;
         const R = b.end, tpl = sh.rows.get(R - 1) || sh.rows.get(R);
         insertRows(sh, R, need, tpl, cashNm); rep.ins += need;
         // 이 블록 아래 칸 주소·다른 시트·이름 옮기기
         shiftBlocks(R, need);
         mod.set('shift', (mod.get('shift') || []).concat([[R, need]]));
+        // 합계 범위 마지막 줄까지 내역이 차 있었으면: 끼운 빈 줄 아래로 밀려난 그 마지막 내역을 제자리(R)로 올리고 빈 줄을 그 아래로
+        //  → 새 내역이 합계 범위 안 빈 줄에 들어감 (v5.5까지는 범위 밖 「월 계」·「누 계」 줄 위에 써서 다음 달과 섞였음)
+        if (full) {
+          const E1 = R + need, mv = sh.rows.get(E1), bl = sh.rows.get(R);
+          if (mv) sh.rows.set(R, renumber(mv, E1, R).replace(/(<f[^>]*>)([^<]*)(<\/f>)/g, (a, o, t, c) => o + esc(insShift(unesc(t), E1, -need, true, cashNm)) + c)); else sh.rows.delete(R);
+          if (bl) sh.rows.set(E1, renumber(bl, R, E1)); else sh.rows.delete(E1);
+        }
         lk = lastKeepOf();
       }
       // 서식 견본: 마지막 내역 줄 (없으면 이 블록 첫 줄)
@@ -6094,6 +6112,7 @@ const XP = (function(){
     if (shifts.length) {
       newWb = newWb.replace(/(<definedName [^>]*>)([^<]*)(<\/definedName>)/g, (a, o, t, c) => { let x = unesc(t); shifts.forEach(([R, k]) => { x = insShift(x, R, k, false, cashNm); }); return o + esc(x) + c; });
     }
+    { const bad = nuBad(newWb), n1 = wolN(), o = outRow(); if (bad.length || n1 !== wol0 || o) throw new Error('엑셀을 만들다가 「월 계」 · 「누 계」 줄이 어긋나서(' + (bad.length ? monOf(bad[0]) + '누계 이름' : o ? o.m + '월 ' + o.r + '행' : '월계 ' + wol0 + '→' + n1 + '줄') + ') 저장하지 않았습니다. 담당자에게 알려 주세요'); }
     /* 월말결산 총예산 */
     const B = spec.bud;
     const bfile = B && B.sheet ? sheetFile(B.sheet) : null;
