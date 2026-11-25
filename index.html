@@ -265,7 +265,9 @@ tr.lv1 td:first-child{padding-left:26px}
 .kgrp .ks{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font-size:13.5px;color:var(--ink2)} .kgrp .ks b{color:var(--ink);font-variant-numeric:tabular-nums}
 .kgrp .kbar{display:inline-flex;align-items:center;gap:8px;width:170px}
 .kgrp .kbar .hotx{color:var(--hot-ink)}
-.kgrp .tw > table{table-layout:fixed;width:100%} .kgrp .tw > table > thead > tr > th:first-child{width:34%}
+.kgrp .tw > table{table-layout:fixed;width:100%}
+@media (max-width:640px){#hd-nav{display:flex;width:100%}#hd-nav button{flex:1 1 auto;padding:0 8px;font-size:14px;white-space:nowrap}#hd-nav .nsx{display:none}}
+@media (max-width:720px){.kgrp .tw > table{min-width:620px}.kgrp > .tw{margin-left:0!important}.rp-rk{display:none}} .kgrp .tw > table > thead > tr > th:first-child{width:34%}
 #o-alert .lk{border-radius:999px;border-color:transparent;background:var(--hot-soft);color:var(--hot-ink);padding:5px 12px}
 #o-alert .lk .num{color:var(--hot-ink);font-weight:700}
 #av-bar [data-av="chul"]::before,#av-bar [data-av="iwol"]::before,#av-bar [data-av="su"]::before,#part-seg [data-part="chul"]::before,#part-seg [data-part="iwol"]::before,#part-seg [data-part="su"]::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
@@ -396,7 +398,7 @@ body.setup .tabs.main, body.setup .tabs.fundbar, body.setup #av-bar, body.setup 
 details.more-g{margin-top:22px}
 details.more-g > summary{cursor:pointer;color:var(--ink2);font-weight:500;padding:8px 0}
 #app{display:none} body.unlocked #app{display:block}
-body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd-undo,body.viewer #hd-guide,body.viewer #hd-lock,body.viewer #hd-nav [data-nav="admin"],body.viewer #pj-m-edit,body.viewer #pj-m-view,body.viewer #pj-edit-go,body.viewer #all-xl,body.viewer #o-recent,body.viewer [data-unc],body.viewer #gbanner,body.viewer #sh-chip,body.viewer .vhide,body.viewer .pv{display:none!important}
+body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,body.viewer #sub-tabs,body.viewer #day-box,body.viewer #hd-undo,body.viewer #hd-guide,body.viewer #hd-lock,body.viewer #hd-nav [data-nav="admin"],body.viewer #pj-m-edit,body.viewer #pj-m-view,body.viewer #rp-m-view,body.viewer #rp-m-pm,body.viewer #rp-xl,body.viewer #pj-edit-go,body.viewer #all-xl,body.viewer #o-recent,body.viewer [data-unc],body.viewer #gbanner,body.viewer #sh-chip,body.viewer .vhide,body.viewer .pv{display:none!important}
 .mgcard{border:1.5px solid var(--accent);background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--surface)}
 .mg-h{display:flex;gap:12px;align-items:center}
 .mg-ic{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--accent-ink);flex:none}
@@ -455,7 +457,7 @@ body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,b
     </div>
     <div class="row" id="hd-tools">
       <div class="seg big" id="hd-nav" role="group" aria-label="화면 보기">
-        <button id="hd-all" data-nav="all" aria-pressed="true" title="세 통장을 합친 전체 현황 (첫 화면). 통장을 눌러 통장별 현황도 볼 수 있습니다">전체 현황</button><button id="hd-proj" data-nav="proj" aria-pressed="false" title="실·과제별 예산과 집행">과제별 현황</button><button id="hd-fc" data-nav="fc" aria-pressed="false" title="예산이 언제 모자랄지 미리 보기">예측</button><button id="hd-admin" data-nav="admin" aria-pressed="false" title="장부·기간별 보고·예산·분류 규칙·설정 (세 통장 한곳에서)">관리</button>
+        <button id="hd-all" data-nav="all" aria-pressed="true" title="세 통장을 합친 전체 현황 (첫 화면). 통장을 눌러 통장별 현황도 볼 수 있습니다">전체<span class="nsx"> 현황</span></button><button id="hd-proj" data-nav="proj" aria-pressed="false" title="실·과제별 예산과 집행">과제별<span class="nsx"> 현황</span></button><button id="hd-rp" data-nav="rp" aria-pressed="false" title="연구책임자별 과제 예산과 집행">연구자별<span class="nsx"> 현황</span></button><button id="hd-fc" data-nav="fc" aria-pressed="false" title="예산이 언제 모자랄지 미리 보기">예측</button><button id="hd-admin" data-nav="admin" aria-pressed="false" title="장부·기간별 보고·예산·분류 규칙·설정 (세 통장 한곳에서)">관리</button>
       </div>
       <select class="field" id="yr" style="height:36px" aria-label="연도"></select>
       <span id="day-box" class="row" style="gap:6px;align-items:center"></span>
@@ -607,6 +609,13 @@ body.viewer #b-csv,body.viewer #pj-xl,body.viewer #fc-xl,body.viewer #part-seg,b
     <div id="pj-top"></div>
     <div class="row" id="pj-bar" style="gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center"><button class="btn" id="pj-m-view" aria-pressed="true">현황</button><button class="btn" id="pj-m-edit" aria-pressed="false">예산 조정</button><select class="field" id="pj-room" style="height:34px" aria-label="실"></select><select class="field" id="pj-kind" style="height:34px" aria-label="과제 구분"></select><input class="field" id="pj-q" placeholder="과제 이름 찾기" style="height:34px;width:200px" aria-label="과제 검색"><button class="btn" id="pj-xl">과제별 엑셀</button></div>
     <div id="pj-body"></div>
+  </section>
+
+  <!-- 연구자별: 연구책임자 → 과제 → 항목 -->
+  <section class="panel" id="p-rp" role="tabpanel" aria-label="연구자별 현황" hidden>
+    <div class="row" id="rp-bar" style="gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center"><button class="btn" id="rp-m-view" aria-pressed="true">현황</button><button class="btn" id="rp-m-pm" aria-pressed="false">책임자 연결</button><input class="field" id="rp-q" type="search" placeholder="연구자·과제 이름 찾기" style="height:34px;width:210px" aria-label="연구자 또는 과제 찾기" autocomplete="off"><button class="btn" id="rp-xl">연구자별 엑셀</button></div>
+    <div id="rp-body"></div>
+    <datalist id="rp-names"></datalist>
   </section>
 
   <!-- 전체 현황 -->
@@ -1161,11 +1170,20 @@ async function viewBoot($l){
   document.body.classList.add('unlocked', 'viewer'); $l('lock').remove();
   await app(sn.base, '', { view: true, snap: sn });
 }
+/* 브라우저가 답을 안 줘도(허용 확인·위치 기억) 가계부가 멈추지 않게: ms 안에 답이 없거나 오류면 v, 늦으면 late() */
+function lkWait(f, ms, v, late){
+  let t; const to = new Promise(r => { t = setTimeout(() => { if (late) late(); r(v); }, ms); });
+  return Promise.race([(async () => f())().catch(() => v), to]).finally(() => clearTimeout(t));
+}
+let IDB_SLOW = false; const idbLate = () => { IDB_SLOW = true; };
+const QUIT = /\bEdg\//.test(navigator.userAgent) ? '엣지 창을 모두 닫고(오른쪽 위 ⋯ → 맨 아래 「Microsoft Edge 닫기」) 다시 열어 주세요.' : '크롬을 완전히 끄고(오른쪽 위 ⋮ → 맨 아래 「종료」) 다시 열어 주세요.';
 function lidb(){ return new Promise((res, rej) => { const r = indexedDB.open('ccg-ledger-file', 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function shGet(){ try { const d = await lidb(); return await new Promise(res => { const q = d.transaction('h').objectStore('h').get('share'); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch(e){ return null; } }
-async function shSet(v){ try { const d = await lidb(); await new Promise(res => { const t = d.transaction('h', 'readwrite'); if (v) t.objectStore('h').put(v, 'share'); else t.objectStore('h').delete('share'); t.oncomplete = res; t.onerror = res; t.onabort = res; }); } catch(e){} }
-async function lidbGet(){ try { const d = await lidb(); return await new Promise(res => { const q = d.transaction('h').objectStore('h').get('ledger'); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch(e){ return null; } }
-async function lidbSet(v){ try { const d = await lidb(); await new Promise(res => { const t = d.transaction('h', 'readwrite'); t.objectStore('h').put(v, 'ledger'); t.oncomplete = res; t.onerror = res; t.onabort = res; }); } catch(e){} }
+function lidbGetK(k){ return lkWait(async () => { const d = await lidb(); return await new Promise(res => { const q = d.transaction('h').objectStore('h').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); }, 2500, null, idbLate); }
+function lidbSetK(k, v){ return lkWait(async () => { const d = await lidb(); await new Promise(res => { const t = d.transaction('h', 'readwrite'); if (v) t.objectStore('h').put(v, k); else t.objectStore('h').delete(k); t.oncomplete = res; t.onerror = res; t.onabort = res; }); }, 2500, undefined, idbLate); }
+function shGet(){ return lidbGetK('share'); }
+function shSet(v){ return lidbSetK('share', v); }
+function lidbGet(){ return lidbGetK('ledger'); }
+function lidbSet(v){ return lidbSetK('ledger', v); }
 const LTYPES = [{ description: '통장 가계부 장부 파일', accept: { 'application/json': ['.json'] } }];
 const EMPTY_BASE = {"master":[],"income":[["648-02 출연금 수익","출연금수익","출연금"],["671-01 예금 이자수익","예금이자수익","이자수익"],["679-09 기타 잡수익","기타잡수익","잡수익"],["181-01 순세계잉여금","순세계잉여금","세계잉여금"]],"months":[["1월",1],["2월",2],["3월",3],["4월",4],["5월",5],["6월",6],["7월",7],["8월",8],["9월",9],["일월",1],["이월",2],["삼월",3],["사월",4],["오월",5],["유월",6],["육월",6],["칠월",7],["팔월",8],["구월",9],["10월",10],["시월",10],["십월",10],["11월",11],["십일월",11],["12월",12],["십이월",12]],"learned":[],"lkw":[],"basem":{},"cash":[],"baseYear":2026,"cut":0};
 (async function lock(){
@@ -1175,7 +1193,7 @@ const EMPTY_BASE = {"master":[],"income":[["648-02 출연금 수익","출연금�
   const escL = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ok = !!(window.crypto && crypto.subtle) && typeof window.showOpenFilePicker === 'function' && window.self === window.top;
   if (!ok) { fl.innerHTML = ''; msg.textContent = '이 브라우저에서는 열 수 없습니다. 크롬이나 엣지로 이 파일을 여세요.'; go.disabled = true; inp.disabled = true; return; }
-  let LH = await lidbGet();
+  let LH = await lidbGet(); const LH0 = LH;
   const show = () => {
     fl.innerHTML = LH ? '<span class="lf-l">장부 파일</span> <b>' + escL(LH.name) + '</b> <button type="button" class="lk" id="lock-pick">다른 파일</button>'
       : '<button type="button" class="btn" id="lock-pick" style="width:100%">장부 파일 고르기</button><span class="lf-h">공유 폴더의 <b>통장가계부_장부.json</b>을 고르세요</span>';
@@ -1195,20 +1213,35 @@ const EMPTY_BASE = {"master":[],"income":[["648-02 출연금 수익","출연금�
     go.disabled = true; msg.textContent = '여는 중…';
     const fail = t => { msg.textContent = t; go.disabled = false; };
     try {
-      let st = 'prompt'; try { st = await LH.queryPermission({ mode: 'readwrite' }); } catch(x){}
-      if (st !== 'granted') st = await LH.requestPermission({ mode: 'readwrite' });
+      let st = await lkWait(() => LH.queryPermission({ mode: 'readwrite' }), 2000, 'prompt');
+      if (st !== 'granted') {
+        const hint = setTimeout(() => { msg.textContent = '장부 파일 「파일 수정 허용」을 기다리는 중입니다. 허용 창이 안 보이면 주소창 오른쪽의 작은 아이콘을 누르거나, 브라우저 창을 모두 닫고 다시 열어 주세요.'; }, 3000);
+        try { st = await LH.requestPermission({ mode: 'readwrite' }); } finally { clearTimeout(hint); }
+      }
       if (st !== 'granted') return fail('「파일 수정 허용」(또는 「편집 허용」)을 눌러야 열 수 있습니다.');
     } catch(err){ return fail('「열기」를 한 번 더 눌러 주세요.'); }
     let file, d;
-    try { file = await LH.getFile(); d = JSON.parse(await file.text()); }
-    catch(err){ return fail(err && err.name === 'NotFoundError' ? '장부 파일을 찾을 수 없습니다. 옮기거나 이름을 바꿨다면 「다른 파일」로 다시 고르세요.' : '장부 파일을 읽지 못했습니다. 공유 폴더 연결을 확인하세요.'); }
+    msg.textContent = '장부 파일 읽는 중…';
+    const slowR = setTimeout(() => { msg.textContent = '장부 파일을 읽는 데 오래 걸리고 있습니다… 계속 이대로면 ' + QUIT; }, 8000);
+    try { file = await LH.getFile(); d = JSON.parse(await file.text()); clearTimeout(slowR); }
+    catch(err){ clearTimeout(slowR); return fail(err && err.name === 'NotFoundError' ? '장부 파일을 찾을 수 없습니다. 옮기거나 이름을 바꿨다면 「다른 파일」로 다시 고르세요.' : '장부 파일을 읽지 못했습니다. 공유 폴더 연결을 확인하세요.'); }
     const when = d && d.savedAt ? (() => { const t = new Date(d.savedAt); return isNaN(t) ? '' : ' (' + (t.getMonth() + 1) + '/' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 저장)'; })() : '';
     if (!d || d.app !== '통장가계부') return fail('고른 파일(' + LH.name + ')은 통장 가계부 장부 파일이 아닙니다. 「다른 파일」을 눌러 다시 고르세요.');
     if (!d.enc || Number(d.v) < 3) return fail('고른 파일(' + LH.name + when + ')은 예전 버전에서 만든 장부입니다. 「다른 파일」을 눌러 새로 받은 장부 파일을 고르세요.');
-    let inner; try { inner = await decJSON(d.enc, pw); } catch(err){ inp.select(); return fail('비밀번호가 맞지 않습니다. 지금 고른 파일: ' + LH.name + when + ' — 새로 받은 장부 파일이 아니면 「다른 파일」을 눌러 다시 고르세요. 한/영 키도 확인하세요.'); }
+    msg.textContent = '비밀번호 확인 중…';
+    const slowP = setTimeout(() => { msg.textContent = '비밀번호 확인이 오래 걸리고 있습니다… 계속 이대로면 ' + QUIT; }, 8000);
+    let inner; try { inner = await decJSON(d.enc, pw); clearTimeout(slowP); } catch(err){ clearTimeout(slowP); inp.select(); return fail('비밀번호가 맞지 않습니다. 지금 고른 파일: ' + LH.name + when + ' — 새로 받은 장부 파일이 아니면 「다른 파일」을 눌러 다시 고르세요. 한/영 키도 확인하세요.'); }
     if (!inner || !inner.base) return fail('이 파일에는 가계부 자료가 없습니다.');
-    await lidbSet(LH);
-    try { const sh = await shGet(); if (sh) { let s2 = 'prompt'; try { s2 = await sh.queryPermission({ mode: 'readwrite' }); } catch(x){} if (s2 !== 'granted') await sh.requestPermission({ mode: 'readwrite' }); } } catch(x){}
+    await lkWait(async () => {
+      if (LH !== LH0) { msg.textContent = '장부 파일 위치 기억하는 중…'; await lidbSet(LH); }
+      msg.textContent = '공유 파일 확인 중…';
+      const sh = await shGet(); if (!sh) return;
+      const s2 = await lkWait(() => sh.queryPermission({ mode: 'readwrite' }), 1500, 'prompt');
+      if (s2 === 'granted') return;
+      msg.textContent = '공유 폴더 파일(' + (sh.name || SNAP_FILE) + ') 허용을 기다리는 중… 허용하지 않아도 몇 초 뒤 열립니다';
+      await lkWait(() => sh.requestPermission({ mode: 'readwrite' }), 4000, null);
+    }, 6000, null);
+    if (IDB_SLOW) { msg.textContent = '브라우저 저장소가 응답하지 않아 그 단계는 건너뛰고 엽니다. 업무마감 전에 ' + QUIT; await new Promise(r => setTimeout(r, 2500)); }
     inp.value = ''; msg.textContent = '';
     document.body.classList.add('unlocked'); $l('lock').remove();
     const boot = { h: LH, mod: file.lastModified, salt: d.enc.salt, data: { rev: d.rev, savedAt: d.savedAt, base: inner.base, entries: inner.entries || [], etc: inner.etc || [], days: inner.days || [], etcp: inner.etcp || [], etat: inner.etat || [], rules: inner.rules || [], budgets: inner.budgets || [], years: inner.years || [], gh: inner.gh || null } };
@@ -1400,9 +1433,8 @@ let chain = Promise.resolve(), dbh = null;
 const FS = { h: null, name: '', mod: 0, pending: false, at: '', err: '', salt: null, needPw: false };
 const FS_OK = (() => { try { return typeof window.showOpenFilePicker === 'function' && typeof window.showSaveFilePicker === 'function' && window.isSecureContext !== false && window.self === window.top; } catch(e){ return false; } })();
 const FS_TYPES = [{ description: '통장 가계부 장부 파일', accept: { 'application/json': ['.json'] } }];
-function idbOpen(){ return new Promise((res, rej) => { const r = indexedDB.open('ccg-ledger-file', 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function idbGet(){ try { const d = await idbOpen(); return await new Promise(res => { const q = d.transaction('h').objectStore('h').get('ledger'); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch(e){ return null; } }
-async function idbSet(v){ try { const d = await idbOpen(); await new Promise(res => { const t = d.transaction('h', 'readwrite'); if (v) t.objectStore('h').put(v, 'ledger'); else t.objectStore('h').delete('ledger'); t.oncomplete = res; t.onerror = res; t.onabort = res; }); } catch(e){} }
+function idbOpen(){ return lidb(); }
+function idbSet(v){ return lidbSetK('ledger', v); }
 function fsBlank(){ return { app: '통장가계부', v: 1, rev: 0, savedAt: '', entries: [], rules: [], budgets: [], years: [], etc: [], days: [], etcp: [], etat: [] }; }
 function localYears(){ try { return JSON.parse(lsGet('ccg:years') || '[]') || []; } catch(e){ return []; } }
 function hm(d){ const p = n => String(n).padStart(2, '0'); return p(d.getHours()) + ':' + p(d.getMinutes()); }
@@ -1465,7 +1497,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v5.7', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v6.0', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
 }
 function closeMeta(){
   const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
@@ -1480,7 +1512,7 @@ async function shWrite(manual){
   if (SH.busy) { shSchedule(); return false; }
   SH.busy = true;
   try {
-    let st = 'prompt'; try { st = await SH.h.queryPermission({ mode: 'readwrite' }); } catch(e){}
+    let st = await lkWait(() => SH.h.queryPermission({ mode: 'readwrite' }), 2000, 'prompt');
     if (st !== 'granted') {
       if (!manual) { SH.ok = false; SH.err = 'perm'; renderSh(); return false; }
       st = await SH.h.requestPermission({ mode: 'readwrite' });
@@ -1504,7 +1536,7 @@ async function shOff(){ SH.h = null; SH.ok = false; SH.at = ''; SH.err = ''; awa
 async function shInit(){
   if (VIEW || !FS_OK) return;
   SH.h = await shGet();
-  if (SH.h) { try { SH.ok = (await SH.h.queryPermission({ mode: 'readwrite' })) === 'granted'; } catch(e){ SH.ok = false; } if (SH.ok) shWrite(false); }
+  if (SH.h) { SH.ok = (await lkWait(() => SH.h.queryPermission({ mode: 'readwrite' }), 2000, 'prompt')) === 'granted'; if (SH.ok) shWrite(false); }
   renderSh();
 }
 /* GitHub로 올리기 (암호화한 자료를 저장소의 data.enc.json 으로) */
@@ -3951,7 +3983,7 @@ function renderSal(){
   });
   SAL.extra.forEach(it => { const mp = SAL.map[it.key] || ''; h += '<tr><td></td><td><span class="neg">분류 규칙 없음</span> · ' + esc(it.col) + ' <span class="muted">(' + esc(it.jik) + ')</span> <input class="field" data-slmap="' + esc(it.key) + '" list="so-list" value="' + esc(mp) + '" placeholder="예산항목 고르기" style="height:30px;width:240px"></td><td class="r">' + it.n + '</td><td class="r"><b>' + fmt(it.amt) + '</b></td><td colspan="4" class="muted">' + (mp ? '' : '예산항목을 고르면 합계에 포함되고, 같은 직책은 다음부터 자동 분류됩니다') + '</td><td></td></tr>'; });
   h += '<tr style="background:var(--zebra)"><td></td><td><b>합계</b></td><td></td><td class="r"><b>' + fmt(tot) + '</b></td><td class="r"><b>' + fmt(sB) + '</b></td><td class="r"><b>' + fmt(sS) + '</b></td><td class="r muted">' + fmt(sP) + '</td><td class="r ' + (sR < 0 ? 'neg' : '') + '"><b>' + fmt(sR) + '</b></td><td></td></tr></tbody></table></div>';
-  h += '<div class="muted" style="margin-top:6px">급여대장 지급액계 <b>' + fmt(SAL.sum.gross) + '</b> ' + (tot === SAL.sum.gross ? '<span class="chip">✔ 품의금액 합계와 일치</span>' : '<span class="chip c">품의금액 합계와 차이 ' + fmt(tot - SAL.sum.gross) + '</span>') + ' · 합계의 예산액·기지급액·잔액은 예산항목을 찾은 줄만 더한 값입니다.</div>';
+  h += '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px"><div class="muted" style="flex:1;min-width:260px">급여대장 지급액계 <b>' + fmt(SAL.sum.gross) + '</b> ' + (tot === SAL.sum.gross ? '<span class="chip">✔ 품의금액 합계와 일치</span>' : '<span class="chip c">품의금액 합계와 차이 ' + fmt(tot - SAL.sum.gross) + '</span>') + ' · 합계의 예산액·기지급액·잔액은 예산항목을 찾은 줄만 더한 값입니다.</div><button class="btn sm" id="sl-xl1">이 표 엑셀로 받기</button></div>';
   h += salRulesHtml();
   h += '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center"><input class="field" id="sl-title" value="' + esc(title) + '" style="min-width:300px;flex:1;height:36px" aria-label="품의서 제목"><button class="btn primary" id="sl-add">작업창에 품의로 올리기 (' + (SAL.sel && SAL.sel.size ? '선택 ' + rows.filter(r => r.b && SAL.sel.has(r.it.label)).length : rows.filter(r => r.b).length) + '개 항목)</button><span class="muted">품의서 제목으로 항목마다 한 줄씩 「품의만 올림」에 들어갑니다. 같은 제목·항목이 이미 있으면 건너뜁니다.</span></div>' + (nbad || nmiss ? '<div class="neg" style="margin-top:6px">' + (nbad ? '예산이 모자란 항목 ' + nbad + '개 ' : '') + (nmiss ? '예산항목에 없는 이름 ' + nmiss + '개' : '') + ' — 품의 전에 확인하세요.</div>' : '');
   // ② 현금지급
@@ -4006,10 +4038,31 @@ async function salAdd(){
   toast(n + '개 항목을 「품의만 올림」으로 넣었습니다' + (skip ? ' (이미 있는 ' + skip + '개 건너뜀)' : '') + ' — 작업창에서 확인하세요');
   renderSal();
 }
+function salCurTitle(){ return ($('#sl-title') && $('#sl-title').value) || (SAL.y + '년 ' + SAL.m + '월 급여 지급'); }
+/* ① 예산과목별 분류 · 출연금 확인 표만 엑셀로 (예산과목별 합계라 개인별 급여는 들어가지 않음, 장부에는 아무것도 저장하지 않음) */
+function salExport1(){
+  if (!SAL.loaded) return;
+  const title = salCurTitle();
+  const rows = [[TB(title + ' — 예산과목별 분류 · 출연금 확인')], [], ['예산과목', '인원', '품의금액(이번 급여)', '예산액', '기지급액(품의·결재중 포함)', '이 중 품의·결재중', '품의 후 잔액', '확인'].map(H)];
+  let sB = 0, sS = 0, sP = 0, sR = 0;
+  SAL.items.forEach(it => {
+    const b = salBud(it.label);
+    if (!b) { rows.push([it.label, N(it.n), N(it.amt), '', '', '', '', '예산항목 없음']); return; }
+    const pd = salPend(it.label, title), rest = b.bud - b.sp - pd - it.amt;
+    sB += b.bud; sS += b.sp + pd; sP += pd; sR += rest;
+    rows.push([it.label, N(it.n), N(it.amt), N(b.bud), N(b.sp + pd), pd ? N(pd) : '', N(rest), rest < 0 ? '예산 부족' : '정상']);
+  });
+  SAL.extra.forEach(it => { const mp = SAL.map[it.key] || ''; rows.push([it.col + ' (' + it.jik + ')' + (mp ? ' → ' + mp : ''), N(it.n), N(it.amt), '', '', '', '', mp ? '' : '분류 규칙 없음']); });
+  const tot = SAL.items.reduce((a, i) => a + i.amt, 0) + SAL.extra.reduce((a, i) => a + (SAL.map[i.key] ? i.amt : 0), 0);
+  rows.push([TB('합계'), '', TN(tot), TN(sB), TN(sS), TN(sP), TN(sR), '']);
+  rows.push([]);
+  rows.push(['급여대장 지급액계', N(SAL.sum.gross), tot === SAL.sum.gross ? '품의금액 합계와 일치' : '품의금액 합계와 차이 ' + fmt(tot - SAL.sum.gross)]);
+  saveXlsx('급여_출연금확인_' + SAL.y + '.' + pad2(SAL.m) + '.xlsx', [{ name: '출연금 확인', freeze: 3, widths: [40, 8, 18, 16, 24, 16, 16, 12], rows }]);
+}
 function salExport(){
   if (!SAL.loaded) return;
   const r1 = [['예산과목', '인원', '품의금액', '예산액', '기지급액(품의·결재중 포함)', '이 중 품의·결재중', '품의 후 잔액'].map(H)];
-  SAL.items.forEach(it => { const b = salBud(it.label), pd = salPend(it.label, ''); r1.push([it.label, N(it.n), N(it.amt), b ? N(b.bud) : '', b ? N(b.sp + pd) : '', N(pd), b ? N(b.bud - b.sp - pd - it.amt) : '']); });
+  SAL.items.forEach(it => { const b = salBud(it.label), pd = salPend(it.label, salCurTitle()); r1.push([it.label, N(it.n), N(it.amt), b ? N(b.bud) : '', b ? N(b.sp + pd) : '', N(pd), b ? N(b.bud - b.sp - pd - it.amt) : '']); });
   SAL.extra.forEach(it => r1.push([it.col + ' (' + it.jik + ') 분류 규칙 없음', N(it.n), N(it.amt), '', '', '', '']));
   r1.push([TB('합계'), '', TN(SAL.items.reduce((a, i) => a + i.amt, 0) + SAL.extra.reduce((a, i) => a + i.amt, 0)), '', '', '', '']);
   const r2 = [['성명', '급여대장 차인지급액', '이체 금액', '차이', '확인'].map(H)];
@@ -4044,6 +4097,7 @@ function wireSal(){
     const rd = e.target.closest('[data-slrdel]');
     if (rd) { Store.remove('rule', rd.dataset.slrdel).then(() => { salGroup(); renderSal(); }); }
     else if (e.target.closest('#sl-add')) salAdd();
+    else if (e.target.closest('#sl-xl1')) salExport1();
     else if (e.target.closest('#sl-xl')) salExport();
     else if (e.target.closest('#sl-paste-go')) {
       const q = salParseInp(delimToRows($('#sl-paste').value)); const names = new Set(SAL.ppl.map(p => p.name));
@@ -4430,16 +4484,17 @@ function relabel(){
     else if (o !== undefined) { n.nodeValue = o; ORIGT.delete(n); }
   }
 }
-const SEOUT = ['work', 'input', 'hist', 'status', 'overview', 'all', 'proj', 'pay', 'fc', 'card', 'se'];
+const SEOUT = ['work', 'input', 'hist', 'status', 'overview', 'all', 'proj', 'rp', 'pay', 'fc', 'card', 'se'];
 let CMODE = false, PREVP = '', LASTF = 'chul';
 const PHEAD = { h: '', s: '' };
-const TOPOF = t => (t === 'all' || t === 'overview') ? 'all' : t === 'proj' ? 'proj' : t === 'fc' ? 'fc' : (SUBS.indexOf(t) >= 0 && t !== 'etc' && t !== 'bank') ? 'admin' : '';
+const TOPOF = t => (t === 'all' || t === 'overview') ? 'all' : t === 'proj' ? 'proj' : t === 'rp' ? 'rp' : t === 'fc' ? 'fc' : (SUBS.indexOf(t) >= 0 && t !== 'etc' && t !== 'bank') ? 'admin' : '';
 function fundTabOf(){ if (tab === 'pay') return 'pay'; if (CMODE || tab === 'card') return 'card'; if (PART === 'se' && (tab === 'etc' || tab === 'ex')) return 'se'; if (tab === 'work') return PART; return ''; }
 function syncHead(){
   let a = PHEAD.h, b = PHEAD.s;
   if (tab === 'all') { a = VIEW ? VTITLE : '통장 가계부'; b = VIEW ? '용인시정연구원 · 출연금 · 이월출연금 · 수탁과제' : '용인시정연구원 · 출연금·이월출연금·수탁과제 전체 현황'; }
   else if (tab === 'overview') { a = FH[PART] + ' 현황'; }
   else if (tab === 'proj') { a = '과제별 현황'; b = '용인시정연구원 · 실·과제별 예산과 집행 (세 통장 합산)'; }
+  else if (tab === 'rp') { a = '연구자별 현황'; b = '용인시정연구원 · 연구책임자별 과제 예산과 집행 (세 통장 합산)'; }
   else if (tab === 'fc') { a = '예산 부족 예측'; b = VIEW ? '용인시정연구원' : '용인시정연구원 · 남은 예산이 언제 모자랄지 세 통장을 한꺼번에 봅니다'; }
   else if (tab === 'pay') { a = '급여'; b = '용인시정연구원 · 급여대장 → 예산과목별 나누기 · 급여 지출결의 합계'; }
   else if (tab === 'card') { a = '법인카드 대조'; b = '출연금·이월출연금·수탁과제의 법인카드 사용분을 결제일 기준으로 모아 명세서와 맞춰 봅니다'; }
@@ -4666,7 +4721,7 @@ function renderProj(){
         h += '<div class="tw" style="margin:0 0 12px 22px"><table><thead><tr><th>과제</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
         kl.forEach(r => {
           const id = rm + '|' + r.x.key, open = PJ.open.has(id);
-          h += '<tr class="pj-row" data-pj="' + esc(id) + '" style="cursor:pointer"><td>' + (open ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (r.x.note ? ' <span class="chip">' + esc(r.x.note) + '</span>' : '') + (!r.o.items.length && r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
+          h += '<tr class="pj-row" data-pj="' + esc(id) + '" style="cursor:pointer"><td>' + (open ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (r.x.note ? ' <span class="chip">' + esc(r.x.note) + '</span>' : '') + (pmOf(r.x.key) ? ' <span class="muted" style="font-size:12.5px;white-space:nowrap">· ' + esc(pmOf(r.x.key)) + '</span>' : '') + (!r.o.items.length && r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
           if (open && r.o.items.length) h += '<tr class="pj-det"><td colspan="' + (VIEW ? 5 : 6) + '"><table style="width:100%"><thead><tr><th>항목</th><th>기금</th><th class="r">예산</th><th class="r">집행</th><th class="r">잔액</th><th class="r pv">진행중</th></tr></thead><tbody>' + r.o.items.map(i => '<tr data-lf="' + esc(i.label) + '" data-lfp="' + i.p + '"><td>' + esc(i.label) + ' <button class="lf-b" type="button" aria-label="' + esc(i.label) + ' 지출 내역 보기">내역</button></td><td>' + esc(FSHORT[i.p]) + '</td><td class="num">' + fmt(i.bud) + '</td><td class="num">' + fmt(i.sp) + '</td><td class="num' + (i.bud - i.sp < 0 ? ' neg' : '') + '">' + fmt(i.bud - i.sp) + '</td><td class="num pv">' + (i.pend ? fmt(i.pend) : '–') + '</td></tr>').join('') + '</tbody></table></td></tr>';
         });
         h += '</tbody></table></div>';
@@ -4678,6 +4733,126 @@ function renderProj(){
   if (R.extra.length && !PJ.room && !PJ.kind && !PJ.q) h += '<h2 class="sec-h ovsec" style="margin-top:22px">연구과제별 집행현황 시트에 없는 과제</h2><p class="sec-p">장부에는 예산 항목이 있는데 시트에는 없는 과제입니다.</p><div class="tw"><table><thead><tr><th>과제(항목 이름 기준)</th><th class="r">항목 예산 합</th><th class="r">집행액</th></tr></thead><tbody>' + R.extra.map(e => '<tr><td>' + esc(e.o.items[0].label.replace(/\s+\S+$/, '')) + '</td><td class="num">' + fmt(e.o.lb) + '</td><td class="num">' + fmt(e.o.sp) + '</td></tr>').join('') + '</tbody></table></div>';
   h += '<p class="sec-p" style="margin-top:14px">실·과제 구분은 「' + esc(pj.sheet) + '」 시트 기준(' + pj.yr + '년)이고, 예산액은 예산 조정이 반영된 금액입니다.' + (pj.yr !== YR ? ' <b class="neg">지금 보는 연도(' + YR + '년)와 다릅니다.</b>' : '') + '</p>';
   box.innerHTML = h;
+}
+
+/* ───────── 연구자별: 과제마다 연구책임자를 연결해 책임자별로 모아 봄 ─────────
+   연결은 장부 원본(ROOT.pm = { 과제키: 이름 })에 저장 → 엑셀을 다시 불러와도 남고, 현황 자료에 실려 팀원 화면에도 감 */
+const RP = { mode: 'view', q: '', open: new Set(), popen: new Set() };
+const PJRC = ['var(--f-chul)', 'var(--f-iwol)', 'var(--f-su)', '#0891b2', '#db2777', '#65a30d', '#ca8a04'];
+const pmMap = () => (ROOT && ROOT.pm && typeof ROOT.pm === 'object') ? ROOT.pm : {};
+const pmOf = key => { const v = pmMap()[key]; return v ? String(v) : ''; };
+const pmNames = () => Array.from(new Set(Object.values(pmMap()).map(String).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ko'));
+function rpData(){
+  const R = projRows(), by = new Map(), none = [], rooms = Array.from(new Set(R.rows.map(r => r.x.room)));
+  R.rows.forEach(r => { const nm = pmOf(r.x.key); if (!nm) { none.push(r); return; } if (!by.has(nm)) by.set(nm, []); by.get(nm).push(r); });
+  const ppl = Array.from(by.keys()).sort((a, b) => a.localeCompare(b, 'ko')).map(nm => { const l = by.get(nm); return { nm, l, t: sumR(l), rooms: Array.from(new Set(l.map(r => r.x.room))) }; });
+  return { R, ppl, none, rooms };
+}
+const rpHit = (p, q) => !q || p.nm.replace(/\s/g, '').indexOf(q) >= 0 || p.l.some(r => r.x.key.indexOf(q) >= 0);
+function renderRp(){
+  const box = $('#rp-body'); if (!box) return;
+  const pj = ROOT.proj;
+  $('#rp-m-view').setAttribute('aria-pressed', String(RP.mode === 'view')); $('#rp-m-pm').setAttribute('aria-pressed', String(RP.mode === 'pm'));
+  if (!pj || !pj.items || !pj.items.length) { $('#rp-bar').hidden = true; box.innerHTML = '<p class="sec-p">' + (VIEW ? '과제 자료가 아직 없습니다.' : '<b>연구과제별 집행현황을 아직 불러오지 않았습니다.</b> 「과제별 현황」의 안내대로 출연금 엑셀을 다시 불러오면 쓸 수 있습니다.') + '</p>'; return; }
+  $('#rp-bar').hidden = false;
+  if (RP.mode === 'pm' && !VIEW) {
+    const ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains('pm-in') && box.contains(ae)) { pmSum(); return; }  // 이름을 적는 중에는 표를 다시 그리지 않음(커서 유지)
+    box.innerHTML = renderPmEdit(); pmSum(); return;
+  }
+  const D = rpData(), q = RP.q.replace(/\s/g, '');
+  if (!D.ppl.length) {
+    box.innerHTML = VIEW ? '<p class="sec-p">아직 연구책임자가 연결된 과제가 없습니다.</p>' : '<div class="card box"><p class="sec-p"><b>아직 연구책임자를 연결한 과제가 없습니다.</b> 「책임자 연결」에서 과제마다 연구책임자 이름을 적으면 여기서 책임자별로 모아 보고, 팀원 화면에도 「연구자별 현황」으로 보입니다.</p><div class="row" style="margin-top:10px"><button class="btn primary" data-rpgo="pm">책임자 연결하기</button></div></div>';
+    return;
+  }
+  const ppl = D.ppl.filter(p => rpHit(p, q));
+  const T = sumR(ppl.reduce((a, p) => a.concat(p.l), [])), rest = T.bud - T.sp, rt = T.bud ? T.sp / T.bud : 0;
+  const pcs = v => (v * 100).toFixed(1) + '%', wd = v => Math.min(100, v * 100).toFixed(1) + '%';
+  let h = '<section class="card hero" aria-label="연구자별 요약"><div class="ring" style="--p:' + wd(rt) + ';--rcv:var(--accent)" role="img" aria-label="전체 집행률 ' + pcs(rt) + '"><div class="ring-in"><span class="ring-v">' + pcs(rt) + '</span><span class="ring-l">전체 집행률</span></div></div>' +
+    '<div class="hero-stats"><div><div class="l">연구책임자</div><div class="v">' + ppl.length + '<small> 명 · 과제 ' + T.n + '개</small></div><div class="s">' + YR + '년' + (q ? ' · 찾은 결과만' : '') + '</div></div>' +
+    '<div><div class="l">과제 예산</div><div class="v">' + fmt(T.bud) + '<small> 원</small></div><div class="s">세 통장 합산</div></div>' +
+    '<div><div class="l">집행</div><div class="v">' + fmt(T.sp) + '<small> 원</small></div><div class="s">지출 완료 기준</div></div>' +
+    '<div><div class="l">잔액</div><div class="v' + (rest < 0 ? ' neg' : '') + '">' + fmt(rest) + '<small> 원</small></div>' + (VIEW ? '' : '<div class="s">진행중(품의·결재중) ' + fmt(T.pend) + '원</div>') + '</div></div></section>';
+  const allOpen = ppl.length > 0 && ppl.every(p => RP.open.has(p.nm));
+  h += '<section class="card box" style="margin-bottom:16px"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px"><h2 class="sec-h" style="font-size:19px;margin:0">연구책임자별</h2>' + (ppl.length > 1 ? '<button class="btn sm" data-rpall="' + (allOpen ? '0' : '1') + '">' + (allOpen ? '모두 접기' : '모두 펼치기') + '</button>' : '') + '</div>';
+  if (!ppl.length) h += '<p class="sec-p">찾는 이름이 없습니다.</p>';
+  ppl.forEach(p => {
+    const op = RP.open.has(p.nm), t = p.t, r = t.bud ? t.sp / t.bud : 0, hot = isHot(t.sp, t.bud), nh = p.l.filter(x => isHot(x.sp, x.bud)).length;
+    const fc = p.rooms.length === 1 ? PJRC[D.rooms.indexOf(p.rooms[0]) % PJRC.length] : 'var(--accent)';
+    h += '<div class="kgrp' + (op ? ' open' : '') + '" style="--fc:' + fc + '"><button type="button" data-rpn="' + esc(p.nm) + '" aria-expanded="' + op + '"><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">' + SVG_CHEV_C + '<b>' + esc(p.nm) + '</b><span class="muted" style="font-size:13.5px">' + t.n + '개 과제 · ' + p.rooms.map(esc).join(', ') + '</span>' + (nh ? '<span class="hotchip" style="font-size:12px;padding:2px 8px">거의 다 쓴 과제 ' + nh + '개</span>' : '') + '</span>' +
+      '<span class="ks"><span>예산 <b>' + fmt(t.bud) + '</b></span><span>집행 <b>' + fmt(t.sp) + '</b></span><span>잔액 <b class="' + (t.bud - t.sp < 0 ? 'neg' : '') + '">' + fmt(t.bud - t.sp) + '</b></span>' + (!VIEW && t.pend ? '<span>진행중 <b>' + fmt(t.pend) + '</b></span>' : '') +
+      '<span class="kbar"><span class="fbar' + (hot ? ' hot' : '') + '" style="height:8px;flex:1"><b style="width:' + wd(r) + '"></b></span><b class="' + (hot ? 'hotx' : '') + '">' + pcs(r) + '</b></span></span></button>';
+    if (op) {
+      h += '<div class="tw" style="margin:0 0 12px 22px"><table><thead><tr><th>과제</th><th class="rp-rk">실 · 구분</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
+      p.l.forEach(r => {
+        const id = p.nm + '|' + r.x.key, po = RP.popen.has(id);
+        h += '<tr class="pj-row" data-rpp="' + esc(id) + '" style="cursor:pointer"><td>' + (po ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (!r.o.items.length && r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') + '</td><td class="muted rp-rk" style="white-space:nowrap">' + esc(r.x.room) + ' · ' + esc(r.x.kind) + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
+        if (po && r.o.items.length) h += '<tr class="pj-det"><td colspan="' + (VIEW ? 6 : 7) + '"><table style="width:100%"><thead><tr><th>항목</th><th>기금</th><th class="r">예산</th><th class="r">집행</th><th class="r">잔액</th><th class="r pv">진행중</th></tr></thead><tbody>' + r.o.items.map(i => '<tr data-lf="' + esc(i.label) + '" data-lfp="' + i.p + '"><td>' + esc(i.label) + ' <button class="lf-b" type="button" aria-label="' + esc(i.label) + ' 지출 내역 보기">내역</button></td><td>' + esc(FSHORT[i.p]) + '</td><td class="num">' + fmt(i.bud) + '</td><td class="num">' + fmt(i.sp) + '</td><td class="num' + (i.bud - i.sp < 0 ? ' neg' : '') + '">' + fmt(i.bud - i.sp) + '</td><td class="num pv">' + (i.pend ? fmt(i.pend) : '–') + '</td></tr>').join('') + '</tbody></table></td></tr>';
+      });
+      h += '</tbody></table></div>';
+    }
+    h += '</div>';
+  });
+  h += '<p class="sec-p" style="margin-top:12px">이름을 누르면 맡은 과제가, 과제를 누르면 인건비·회의비·여비·수용비·조사비 예산과 집행이, 항목(또는 「내역」)을 누르면 지출 내역이 나옵니다. 빨간색은 집행률 95% 이상입니다.</p></section>';
+  if (!VIEW && D.none.length && !q) h += '<p class="sec-p">연구책임자가 연결되지 않은 과제 <b>' + D.none.length + '</b>개 — <button class="lk" data-rpgo="pm" style="margin:0">책임자 연결</button>에서 이름을 적으면 여기에 모입니다.</p>';
+  box.innerHTML = h;
+}
+function pmSum(){
+  const el = $('#pm-sum');
+  if (el) { const R = projRows(), names = pmNames(), done = R.rows.filter(r => pmOf(r.x.key)).length;
+    el.innerHTML = '연결된 과제 <b>' + done + '</b> / ' + R.rows.length + '개 · 연구책임자 <b>' + names.length + '</b>명' + (names.length ? '<span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + names.map(n => '<span class="chip">' + esc(n) + ' · ' + R.rows.filter(r => pmOf(r.x.key) === n).length + '개</span>').join('') + '</span>' : ''); }
+  const dl = $('#rp-names'); if (dl) dl.innerHTML = pmNames().map(n => '<option value="' + esc(n) + '">').join('');
+}
+function renderPmEdit(){
+  const R = projRows(), q = RP.q.replace(/\s/g, '');
+  const rows = R.rows.filter(r => !q || r.x.key.indexOf(q) >= 0 || pmOf(r.x.key).replace(/\s/g, '').indexOf(q) >= 0 || (r.x.room + r.x.kind).replace(/\s/g, '').indexOf(q) >= 0);
+  let h = '<div class="card box"><p class="sec-p">과제마다 <b>연구책임자 이름</b>을 적으세요. 같은 사람은 이름을 똑같이 적어야 한 사람으로 모입니다(전에 적은 이름은 칸을 누르면 목록에서 고를 수 있습니다). 적고 Enter를 치거나 다른 칸을 누르면 바로 저장되고, 팀원 화면의 「연구자별 현황」에도 반영됩니다. 이름을 지우면 연결이 풀립니다.</p><div class="sec-p" id="pm-sum" style="margin-top:8px"></div></div>';
+  h += '<div class="tw" style="margin-top:12px"><table><thead><tr><th>실</th><th>과제 구분</th><th>과제</th><th class="r">과제 예산</th><th style="min-width:170px">연구책임자</th></tr></thead><tbody>';
+  if (!rows.length) h += '<tr><td colspan="5" class="muted">찾는 과제가 없습니다.</td></tr>';
+  rows.forEach(r => { h += '<tr><td>' + esc(r.x.room) + '</td><td>' + esc(r.x.kind) + '</td><td>' + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + '</td><td class="num">' + fmt(r.bud) + '</td><td><input class="cell-in pm-in" data-pmk="' + esc(r.x.key) + '" list="rp-names" value="' + esc(pmOf(r.x.key)) + '" placeholder="이름 적기" autocomplete="off" aria-label="' + esc(pjNm(r.x.name)) + ' 연구책임자"></td></tr>'; });
+  h += '</tbody></table></div>';
+  return h;
+}
+async function pmSet(key, v){
+  const nm = String(v || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+  if (!key || pmOf(key) === nm) return;
+  if (S.mode !== 'file') { toast('장부 파일을 연결한 뒤에 저장할 수 있습니다'); return; }
+  const old = pmMap(), pm = Object.assign({}, old); if (nm) pm[key] = nm; else delete pm[key];
+  ROOT.pm = pm; pmSum();
+  const ok = await Store._file(d => { if (d.base) d.base.pm = pm; });
+  if (!ok) { ROOT.pm = old; pmSum(); toast('저장하지 못했습니다. 장부 파일 연결을 확인해 주세요'); return; }
+  dirty.proj = 1; dirty.rp = 1;
+  toast(nm ? '연구책임자 ' + nm + ' 연결' : '연구책임자 연결을 풀었습니다');
+}
+function exportRp(){
+  const D = rpData(); if (!D.R.P.length) return;
+  const sm = [['연구책임자', '과제 수', '실', '예산액', '집행액', '집행잔액', '집행률', '진행중'].map(H)];
+  D.ppl.forEach(p => sm.push([p.nm, N(p.t.n), p.rooms.join(', '), N(p.t.bud), N(p.t.sp), N(p.t.bud - p.t.sp), PC(p.t.bud ? p.t.sp / p.t.bud : 0), N(p.t.pend)]));
+  { const t = sumR(D.ppl.reduce((a, p) => a.concat(p.l), [])); sm.push([TB('합계'), TN(t.n), '', TN(t.bud), TN(t.sp), TN(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), TN(t.pend)]); }
+  if (D.none.length) { const t = sumR(D.none); sm.push(['(책임자 미지정)', N(t.n), '', N(t.bud), N(t.sp), N(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), N(t.pend)]); }
+  const pr = [['연구책임자', '실', '과제 구분', '과제', '예산액', '집행액', '집행잔액', '집행률', '진행중'].map(H)];
+  D.ppl.forEach(p => p.l.forEach(r => pr.push([p.nm, r.x.room, r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend)])));
+  D.none.forEach(r => pr.push(['(미지정)', r.x.room, r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend)]));
+  saveXlsx('연구자별_집행현황_' + YR + '.xlsx', [{ name: '연구자별 요약', widths: [16, 8, 30, 16, 16, 16, 10, 14], freeze: 1, rows: sm }, { name: '과제별', widths: [14, 20, 12, 40, 16, 16, 16, 10, 14], freeze: 1, rows: pr }]);
+}
+function wireRp(){
+  $('#rp-m-view').addEventListener('click', () => { RP.mode = 'view'; renderRp(); });
+  $('#rp-m-pm').addEventListener('click', () => { RP.mode = 'pm'; renderRp(); });
+  $('#rp-q').addEventListener('input', e => { RP.q = e.target.value; const q = RP.q.replace(/\s/g, ''); if (q) { const l = rpData().ppl.filter(p => rpHit(p, q)); if (l.length === 1) RP.open.add(l[0].nm); } renderRp(); });
+  $('#rp-xl').addEventListener('click', exportRp);
+  $('#rp-body').addEventListener('change', e => { const i = e.target.closest('.pm-in'); if (i) pmSet(i.dataset.pmk, i.value); });
+  $('#rp-body').addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.isComposing || !e.target.classList.contains('pm-in')) return;
+    e.preventDefault(); const all = Array.from(document.querySelectorAll('#rp-body .pm-in')), nx = all[all.indexOf(e.target) + 1];
+    if (nx) nx.focus(); else e.target.blur();
+  });
+  $('#rp-body').addEventListener('click', e => {
+    if (e.target.closest('[data-rpgo]')) { RP.mode = 'pm'; renderRp(); window.scrollTo({ top: 0 }); return; }
+    const pa = e.target.closest('[data-rpall]'); if (pa) { const on = pa.dataset.rpall === '1', q = RP.q.replace(/\s/g, ''); rpData().ppl.filter(p => rpHit(p, q)).forEach(p => { if (on) RP.open.add(p.nm); else RP.open.delete(p.nm); }); renderRp(); return; }
+    const lfr = e.target.closest('tr[data-lf]'); if (lfr) { lfDetail(lfr.dataset.lfp || PART, lfr.dataset.lf); return; }
+    const n = e.target.closest('[data-rpn]'); if (n) { const k = n.dataset.rpn; if (RP.open.has(k)) RP.open.delete(k); else RP.open.add(k); renderRp(); return; }
+    const pr = e.target.closest('[data-rpp]'); if (pr) { const k = pr.dataset.rpp; if (RP.popen.has(k)) RP.popen.delete(k); else RP.popen.add(k); renderRp(); }
+  });
 }
 
 /* 연구용역비 묶음 = 풀 예산 항목 + 연구과제(수탁 제외) 항목 */
@@ -4787,11 +4962,11 @@ function exportProj(){
   const sm = [['실', '과제 수', '예산액', '집행액', '집행잔액', '집행률', '진행중'].map(H)];
   rooms.forEach(rm => { const t = sumR(R.rows.filter(r => r.x.room === rm)); sm.push([rm, N(t.n), N(t.bud), N(t.sp), N(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), N(t.pend)]); });
   { const t = sumR(R.rows); sm.push([TB('합계'), TN(t.n), TN(t.bud), TN(t.sp), TN(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), TN(t.pend)]); }
-  const pr = [['실', '과제 구분', '과제', '예산액', '집행액', '집행잔액', '집행률', '진행중', '비고'].map(H)];
-  R.rows.forEach(r => pr.push([r.x.room, r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend), r.x.note]));
+  const pr = [['실', '과제 구분', '과제', '예산액', '집행액', '집행잔액', '집행률', '진행중', '비고', '연구책임자'].map(H)];
+  R.rows.forEach(r => pr.push([r.x.room, r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend), r.x.note, pmOf(r.x.key)]));
   const it = [['실', '과제 구분', '과제', '기금', '예산항목', '예산', '집행', '잔액', '진행중'].map(H)];
   R.rows.forEach(r => r.o.items.forEach(i => it.push([r.x.room, r.x.kind, r.x.name, FSHORT[i.p], i.label, N(i.bud), N(i.sp), N(i.bud - i.sp), N(i.pend)])));
-  saveXlsx('과제별_집행현황_' + YR + '.xlsx', [{ name: '실별 요약', widths: [22, 8, 16, 16, 16, 10, 14], freeze: 1, rows: sm }, { name: '과제별', widths: [20, 12, 36, 16, 16, 16, 10, 14, 10], freeze: 1, rows: pr }, { name: '항목별', widths: [20, 12, 30, 12, 34, 14, 14, 14, 14], freeze: 1, rows: it }]);
+  saveXlsx('과제별_집행현황_' + YR + '.xlsx', [{ name: '실별 요약', widths: [22, 8, 16, 16, 16, 10, 14], freeze: 1, rows: sm }, { name: '과제별', widths: [20, 12, 36, 16, 16, 16, 10, 14, 10, 14], freeze: 1, rows: pr }, { name: '항목별', widths: [20, 12, 30, 12, 34, 14, 14, 14, 14], freeze: 1, rows: it }]);
 }
 function wirePj(){
   $('#pj-m-view').addEventListener('click', () => { PJ.mode = 'view'; renderProj(); });
@@ -5409,7 +5584,7 @@ function exportCardCmp(){
 }
 
 /* ───────── 렌더 조정 ───────── */
-let tab = 'all', dirty = { chu: 1, ex: 1, hist: 1, fc: 1, xfer: 1, pay: 1, days: 1, etc: 1, proj: 1, work: 1, all: 1, card: 1, input: 1, help: 1, backup: 1, overview: 1, period: 1, ledger: 1, budget: 1, binput: 1, bank: 1, chart: 1, set: 1 }, raf = 0;
+let tab = 'all', dirty = { chu: 1, ex: 1, hist: 1, fc: 1, xfer: 1, pay: 1, days: 1, etc: 1, proj: 1, rp: 1, work: 1, all: 1, card: 1, input: 1, help: 1, backup: 1, overview: 1, period: 1, ledger: 1, budget: 1, binput: 1, bank: 1, chart: 1, set: 1 }, raf = 0;
 function paint(){
   raf = 0;
   if (!ctx) buildCtx();
@@ -5425,6 +5600,7 @@ function paintTab(){
   else if (tab === 'all') renderAll();
   else if (tab === 'work') renderWork();
   else if (tab === 'proj') renderProj();
+  else if (tab === 'rp') renderRp();
   else if (tab === 'etc') renderEtc();
   else if (tab === 'ex') renderEx();
   else if (tab === 'pay') renderSal();
@@ -5452,13 +5628,13 @@ function setTab(t){
   if (t === 'input') t = 'work';
   if ((t === 'etc' && PART !== 'se') || t === 'bank') t = 'ledger';
   if (t === 'admin') { const ls = lsGet('ccg:sub'); t = SUBS.indexOf(ls) >= 0 && ls !== 'etc' && ls !== 'bank' && !((ls === 'binput' || ls === 'xfer' || ls === 'chu') && PART === 'se') ? ls : 'ledger'; }
-  if (VIEW && ['all', 'overview', 'proj', 'fc'].indexOf(t) < 0) t = 'all';
+  if (VIEW && ['all', 'overview', 'proj', 'rp', 'fc'].indexOf(t) < 0) t = 'all';
   tab = t;
-  const g = t === 'ex' ? 'ex' : t === 'etc' && PART === 'se' ? 'se' : t === 'work' ? 'work' : t === 'overview' ? 'status' : t === 'all' ? 'all' : t === 'proj' ? 'proj' : t === 'card' ? 'card' : t === 'pay' ? 'pay' : t === 'fc' ? 'fc' : 'admin';
+  const g = t === 'ex' ? 'ex' : t === 'etc' && PART === 'se' ? 'se' : t === 'work' ? 'work' : t === 'overview' ? 'status' : t === 'all' ? 'all' : t === 'proj' ? 'proj' : t === 'rp' ? 'rp' : t === 'card' ? 'card' : t === 'pay' ? 'pay' : t === 'fc' ? 'fc' : 'admin';
   if (g === 'admin') lsSet('ccg:sub', t);
   ['se', 'ex'].forEach(k => $('#tab-' + k).setAttribute('aria-selected', String(k === g)));
   $('#sub-tabs').hidden = !(PART === 'se' && (g === 'se' || g === 'ex'));
-  $('#p-se').hidden = g !== 'se'; $('#p-ex').hidden = g !== 'ex'; $('#p-input').hidden = true; $('#p-overview').hidden = g !== 'status'; $('#p-admin').hidden = g !== 'admin'; $('#p-all').hidden = g !== 'all'; $('#p-work').hidden = g !== 'work'; $('#p-proj').hidden = g !== 'proj'; $('#p-card').hidden = g !== 'card'; $('#p-pay').hidden = g !== 'pay'; $('#p-fc').hidden = g !== 'fc';
+  $('#p-se').hidden = g !== 'se'; $('#p-ex').hidden = g !== 'ex'; $('#p-input').hidden = true; $('#p-overview').hidden = g !== 'status'; $('#p-admin').hidden = g !== 'admin'; $('#p-all').hidden = g !== 'all'; $('#p-work').hidden = g !== 'work'; $('#p-proj').hidden = g !== 'proj'; $('#p-rp').hidden = g !== 'rp'; $('#p-card').hidden = g !== 'card'; $('#p-pay').hidden = g !== 'pay'; $('#p-fc').hidden = g !== 'fc';
   SUBS.forEach(k => { $('#p-' + k).hidden = k !== t; $('#st-' + k).setAttribute('aria-pressed', String(k === t)); });
   syncHead(); renderLanding();
   paintTab(); relabel();
@@ -7145,7 +7321,7 @@ function exportLedger(fname){
 
 /* ───────── 이벤트 ───────── */
 function wire(){
-  wireWork(); wireEx(); { const dl2 = $('#ex-banks'); if (dl2) dl2.innerHTML = EX_BANK_LIST.map(b => '<option value="' + b + '">').join(''); } wirePj(); wireEtc(); wireDays(); wireSal(); wireXfer(); wireFc(); wireHist(); wireChu();
+  wireWork(); wireEx(); { const dl2 = $('#ex-banks'); if (dl2) dl2.innerHTML = EX_BANK_LIST.map(b => '<option value="' + b + '">').join(''); } wirePj(); wireRp(); wireEtc(); wireDays(); wireSal(); wireXfer(); wireFc(); wireHist(); wireChu();
   $('#in-pay').addEventListener('change', () => { showCardIn($('#in-pay').value === 'card'); renderPreview(); });
   $('#in-t').addEventListener('input', () => { if (PART !== 'se' && !$('#in-pay').value && /법인\s*카드|카드\s*(결제|사용)/.test($('#in-t').value)) { $('#in-pay').value = 'card'; showCardIn(true); renderPreview(); } });
   $('#imp-fund').addEventListener('change', e => { IMP.fund = e.target.value; if (IMP.sheets) renderImport(); });
@@ -7522,7 +7698,7 @@ setPart(FUND3.indexOf(lsGet('ccg:part')) >= 0 ? lsGet('ccg:part') : 'chul'); set
 if (BOOT && BOOT.setup) { $('#app-h1').textContent = '새 장부 만들기'; $('#app-sub').textContent = '용인시정연구원 · 원본 엑셀로 장부 파일을 만듭니다'; }
 Store.init().then(() => { schedule(); shInit();
   if (VIEW) { let vs = null; try { vs = JSON.parse(sessionStorage.getItem('ccg:vstate') || 'null'); sessionStorage.removeItem('ccg:vstate'); } catch(e){}
-    if (vs) { if (vs.y && vs.y !== YR) setYear(vs.y); if (vs.tab === 'overview' && FUND3.indexOf(vs.p) >= 0) { tab = 'overview'; setPart(vs.p); } else if (['all', 'proj', 'fc'].indexOf(vs.tab) >= 0) setTab(vs.tab); } }
+    if (vs) { if (vs.y && vs.y !== YR) setYear(vs.y); if (vs.tab === 'overview' && FUND3.indexOf(vs.p) >= 0) { tab = 'overview'; setPart(vs.p); } else if (['all', 'proj', 'rp', 'fc'].indexOf(vs.tab) >= 0) setTab(vs.tab); } }
 });
 (async () => { try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch(e){ dl = null; } if (dl) { $('#l-csv').hidden = false; $('#b-csv').hidden = false; $('#pr-xl').hidden = false; const bx = $('#bk-xl'); if (bx) bx.hidden = false; } })();
 }
