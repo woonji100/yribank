@@ -1497,7 +1497,7 @@ function snapBuild(){
   const rules = S.allR.filter(r => r.t === 'item' && FUND3.indexOf(r.p || 'chul') >= 0).map(r => Object.assign({}, r));
   const buds = S.budgets.filter(b => FUND3.indexOf(b.p || 'chul') >= 0).map(b => ({ y: b.y, p: b.p, amts: b.amts }));
   const bank = { y: YR, dep: {} }; FUND3.forEach(p => withFund(p, () => { const v = bankNow(p); if (v != null) bank[p] = Math.round(v); const dp = depoNow(p); if (dp) bank.dep[p] = dp; }));
-  return { v: 3, at: new Date().toISOString(), ver: 'v6.0', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
+  return { v: 3, at: new Date().toISOString(), ver: 'v6.1', base: snapBase(), entries: ents, rules, budgets: buds, years: localYears(), bank, close: closeMeta() };
 }
 function closeMeta(){
   const c = GH.cfg && GH.cfg.close; if (!c) return undefined;
@@ -4737,7 +4737,7 @@ function renderProj(){
 
 /* ───────── 연구자별: 과제마다 연구책임자를 연결해 책임자별로 모아 봄 ─────────
    연결은 장부 원본(ROOT.pm = { 과제키: 이름 })에 저장 → 엑셀을 다시 불러와도 남고, 현황 자료에 실려 팀원 화면에도 감 */
-const RP = { mode: 'view', q: '', open: new Set(), popen: new Set() };
+const RP = { mode: 'view', q: '', sel: '', open: new Set(), popen: new Set() };
 const PJRC = ['var(--f-chul)', 'var(--f-iwol)', 'var(--f-su)', '#0891b2', '#db2777', '#65a30d', '#ca8a04'];
 const pmMap = () => (ROOT && ROOT.pm && typeof ROOT.pm === 'object') ? ROOT.pm : {};
 const pmOf = key => { const v = pmMap()[key]; return v ? String(v) : ''; };
@@ -4749,6 +4749,19 @@ function rpData(){
   return { R, ppl, none, rooms };
 }
 const rpHit = (p, q) => !q || p.nm.replace(/\s/g, '').indexOf(q) >= 0 || p.l.some(r => r.x.key.indexOf(q) >= 0);
+function rpRooms(D, q){
+  const out = [];
+  D.rooms.forEach((rm, ci) => {
+    const ppl = [];
+    D.ppl.forEach(p => {
+      const l = p.l.filter(r => r.x.room === rm); if (!l.length) return;
+      if (q && p.nm.replace(/\s/g, '').indexOf(q) < 0 && !l.some(r => r.x.key.indexOf(q) >= 0)) return;
+      ppl.push({ nm: p.nm, l, t: sumR(l), other: p.l.length - l.length });
+    });
+    if (ppl.length) out.push({ rm, ci, ppl, t: sumR(ppl.reduce((x, e) => x.concat(e.l), [])) });
+  });
+  return out;
+}
 function renderRp(){
   const box = $('#rp-body'); if (!box) return;
   const pj = ROOT.proj;
@@ -4765,28 +4778,42 @@ function renderRp(){
     box.innerHTML = VIEW ? '<p class="sec-p">아직 연구책임자가 연결된 과제가 없습니다.</p>' : '<div class="card box"><p class="sec-p"><b>아직 연구책임자를 연결한 과제가 없습니다.</b> 「책임자 연결」에서 과제마다 연구책임자 이름을 적으면 여기서 책임자별로 모아 보고, 팀원 화면에도 「연구자별 현황」으로 보입니다.</p><div class="row" style="margin-top:10px"><button class="btn primary" data-rpgo="pm">책임자 연결하기</button></div></div>';
     return;
   }
-  const ppl = D.ppl.filter(p => rpHit(p, q));
-  const T = sumR(ppl.reduce((a, p) => a.concat(p.l), [])), rest = T.bud - T.sp, rt = T.bud ? T.sp / T.bud : 0;
+  const RR = rpRooms(D, q), all = RR.reduce((x, g) => x.concat(g.ppl.reduce((y, e) => y.concat(e.l), [])), []);
+  const T = sumR(all), rest = T.bud - T.sp, rt = T.bud ? T.sp / T.bud : 0, nPpl = new Set(RR.reduce((x, g) => x.concat(g.ppl.map(e => e.nm)), [])).size;
   const pcs = v => (v * 100).toFixed(1) + '%', wd = v => Math.min(100, v * 100).toFixed(1) + '%';
   let h = '<section class="card hero" aria-label="연구자별 요약"><div class="ring" style="--p:' + wd(rt) + ';--rcv:var(--accent)" role="img" aria-label="전체 집행률 ' + pcs(rt) + '"><div class="ring-in"><span class="ring-v">' + pcs(rt) + '</span><span class="ring-l">전체 집행률</span></div></div>' +
-    '<div class="hero-stats"><div><div class="l">연구책임자</div><div class="v">' + ppl.length + '<small> 명 · 과제 ' + T.n + '개</small></div><div class="s">' + YR + '년' + (q ? ' · 찾은 결과만' : '') + '</div></div>' +
+    '<div class="hero-stats"><div><div class="l">연구책임자</div><div class="v">' + nPpl + '<small> 명 · 과제 ' + T.n + '개</small></div><div class="s">' + YR + '년' + (q ? ' · 찾은 결과만' : '') + '</div></div>' +
     '<div><div class="l">과제 예산</div><div class="v">' + fmt(T.bud) + '<small> 원</small></div><div class="s">세 통장 합산</div></div>' +
     '<div><div class="l">집행</div><div class="v">' + fmt(T.sp) + '<small> 원</small></div><div class="s">지출 완료 기준</div></div>' +
     '<div><div class="l">잔액</div><div class="v' + (rest < 0 ? ' neg' : '') + '">' + fmt(rest) + '<small> 원</small></div>' + (VIEW ? '' : '<div class="s">진행중(품의·결재중) ' + fmt(T.pend) + '원</div>') + '</div></div></section>';
-  const allOpen = ppl.length > 0 && ppl.every(p => RP.open.has(p.nm));
-  h += '<section class="card box" style="margin-bottom:16px"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px"><h2 class="sec-h" style="font-size:19px;margin:0">연구책임자별</h2>' + (ppl.length > 1 ? '<button class="btn sm" data-rpall="' + (allOpen ? '0' : '1') + '">' + (allOpen ? '모두 접기' : '모두 펼치기') + '</button>' : '') + '</div>';
-  if (!ppl.length) h += '<p class="sec-p">찾는 이름이 없습니다.</p>';
-  ppl.forEach(p => {
-    const op = RP.open.has(p.nm), t = p.t, r = t.bud ? t.sp / t.bud : 0, hot = isHot(t.sp, t.bud), nh = p.l.filter(x => isHot(x.sp, x.bud)).length;
-    const fc = p.rooms.length === 1 ? PJRC[D.rooms.indexOf(p.rooms[0]) % PJRC.length] : 'var(--accent)';
-    h += '<div class="kgrp' + (op ? ' open' : '') + '" style="--fc:' + fc + '"><button type="button" data-rpn="' + esc(p.nm) + '" aria-expanded="' + op + '"><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">' + SVG_CHEV_C + '<b>' + esc(p.nm) + '</b><span class="muted" style="font-size:13.5px">' + t.n + '개 과제 · ' + p.rooms.map(esc).join(', ') + '</span>' + (nh ? '<span class="hotchip" style="font-size:12px;padding:2px 8px">거의 다 쓴 과제 ' + nh + '개</span>' : '') + '</span>' +
+  if (!RR.length) { box.innerHTML = h + '<p class="sec-p">찾는 이름이 없습니다.</p>'; return; }
+  if (!RP.sel || !RR.some(g => g.rm === RP.sel)) RP.sel = RR[0].rm;
+  // 실 카드
+  h += '<section class="fcards" aria-label="실별">';
+  RR.forEach(g => {
+    const t = g.t, r = t.bud ? t.sp / t.bud : 0, on = g.rm === RP.sel, hot = g.ppl.reduce((x, e) => x + e.l.filter(z => isHot(z.sp, z.bud)).length, 0);
+    h += '<article class="card fcard' + (on ? ' sel' : '') + '" style="--fc:' + PJRC[g.ci % PJRC.length] + '"><div class="fc-h"><button class="fc-name" data-rpsel="' + esc(g.rm) + '"><span class="dot"></span>' + esc(g.rm) + '</button><span class="fc-rate">' + pcs(r) + '</span></div>' +
+      '<div class="muted" style="margin-top:-10px;padding-left:18px;font-size:13px">연구책임자 ' + g.ppl.length + '명 · 과제 ' + t.n + '개</div>' +
+      '<div class="fbar"><b style="width:' + wd(r) + '"></b></div>' +
+      '<div class="fc-rows"><div><span>예산</span><b>' + fmt(t.bud) + '</b></div><div><span>집행</span><b>' + fmt(t.sp) + '</b></div><div class="em"><span>잔액</span><b class="' + (t.bud - t.sp < 0 ? 'neg' : '') + '">' + fmt(t.bud - t.sp) + '</b></div></div>' +
+      (hot ? '<span class="hotchip" style="align-self:flex-start;font-size:12.5px">거의 다 쓴 과제 ' + hot + '개</span>' : '<span class="muted" style="font-size:12.5px">거의 다 쓴 과제 없음</span>') +
+      (!VIEW && t.pend ? '<div class="fc-extra">진행중 ' + fmt(t.pend) + '</div>' : '') +
+      '<div class="fc-acts"><button class="btn' + (on ? ' primary' : '') + '" data-rpsel="' + esc(g.rm) + '" aria-pressed="' + on + '">' + (on ? '책임자별 보는 중' : '책임자별 보기') + SVG_DOWN + '</button></div></article>';
+  });
+  h += '</section>';
+  // 고른 실의 연구책임자
+  const G = RR.find(g => g.rm === RP.sel), allOpen = G.ppl.every(e => RP.open.has(G.rm + '|' + e.nm));
+  h += '<section class="card box" style="--fc:' + PJRC[G.ci % PJRC.length] + ';margin-bottom:16px"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px"><h2 class="sec-h" style="font-size:19px;display:flex;align-items:center;gap:8px;margin:0"><span class="dot" style="width:12px;height:12px"></span>' + esc(G.rm) + ' 연구책임자</h2>' + (G.ppl.length > 1 ? '<button class="btn sm" data-rpall="' + (allOpen ? '0' : '1') + '">' + (allOpen ? '모두 접기' : '모두 펼치기') + '</button>' : '') + '</div>';
+  G.ppl.forEach(e => {
+    const ok = G.rm + '|' + e.nm, op = RP.open.has(ok), t = e.t, r = t.bud ? t.sp / t.bud : 0, hot = isHot(t.sp, t.bud), nh = e.l.filter(x => isHot(x.sp, x.bud)).length;
+    h += '<div class="kgrp' + (op ? ' open' : '') + '"><button type="button" data-rpn="' + esc(ok) + '" aria-expanded="' + op + '"><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">' + SVG_CHEV_C + '<b>' + esc(e.nm) + '</b><span class="muted" style="font-size:13.5px">' + t.n + '개 과제' + (e.other ? ' · 다른 실 과제 ' + e.other + '개 더' : '') + '</span>' + (nh ? '<span class="hotchip" style="font-size:12px;padding:2px 8px">거의 다 쓴 과제 ' + nh + '개</span>' : '') + '</span>' +
       '<span class="ks"><span>예산 <b>' + fmt(t.bud) + '</b></span><span>집행 <b>' + fmt(t.sp) + '</b></span><span>잔액 <b class="' + (t.bud - t.sp < 0 ? 'neg' : '') + '">' + fmt(t.bud - t.sp) + '</b></span>' + (!VIEW && t.pend ? '<span>진행중 <b>' + fmt(t.pend) + '</b></span>' : '') +
       '<span class="kbar"><span class="fbar' + (hot ? ' hot' : '') + '" style="height:8px;flex:1"><b style="width:' + wd(r) + '"></b></span><b class="' + (hot ? 'hotx' : '') + '">' + pcs(r) + '</b></span></span></button>';
     if (op) {
-      h += '<div class="tw" style="margin:0 0 12px 22px"><table><thead><tr><th>과제</th><th class="rp-rk">실 · 구분</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
-      p.l.forEach(r => {
-        const id = p.nm + '|' + r.x.key, po = RP.popen.has(id);
-        h += '<tr class="pj-row" data-rpp="' + esc(id) + '" style="cursor:pointer"><td>' + (po ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (!r.o.items.length && r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') + '</td><td class="muted rp-rk" style="white-space:nowrap">' + esc(r.x.room) + ' · ' + esc(r.x.kind) + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
+      h += '<div class="tw" style="margin:0 0 12px 22px"><table><thead><tr><th>과제</th><th class="rp-rk">구분</th><th class="r">예산액</th><th class="r">집행액</th><th class="r">집행잔액</th><th class="r">집행률</th><th class="r pv">진행중</th></tr></thead><tbody>';
+      e.l.forEach(r => {
+        const id = ok + '|' + r.x.key, po = RP.popen.has(id);
+        h += '<tr class="pj-row" data-rpp="' + esc(id) + '" style="cursor:pointer"><td>' + (po ? '▾ ' : '▸ ') + esc(pjNm(r.x.name)) + (/^\s*\([^)]*이월/.test(r.x.name) ? ' <span class="chip">이월</span>' : '') + (!r.o.items.length && r.bud > 0 ? '<span class="sub2">연결된 항목 없음</span>' : '') + '</td><td class="muted rp-rk" style="white-space:nowrap">' + esc(r.x.kind) + '</td><td class="num">' + fmt(r.bud) + '</td><td class="num">' + fmt(r.sp) + '</td><td class="num' + (r.bud - r.sp < 0 ? ' neg' : '') + '">' + fmt(r.bud - r.sp) + '</td>' + rateCell(r.sp, r.bud) + '<td class="num pv">' + (r.pend ? fmt(r.pend) : '–') + '</td></tr>';
         if (po && r.o.items.length) h += '<tr class="pj-det"><td colspan="' + (VIEW ? 6 : 7) + '"><table style="width:100%"><thead><tr><th>항목</th><th>기금</th><th class="r">예산</th><th class="r">집행</th><th class="r">잔액</th><th class="r pv">진행중</th></tr></thead><tbody>' + r.o.items.map(i => '<tr data-lf="' + esc(i.label) + '" data-lfp="' + i.p + '"><td>' + esc(i.label) + ' <button class="lf-b" type="button" aria-label="' + esc(i.label) + ' 지출 내역 보기">내역</button></td><td>' + esc(FSHORT[i.p]) + '</td><td class="num">' + fmt(i.bud) + '</td><td class="num">' + fmt(i.sp) + '</td><td class="num' + (i.bud - i.sp < 0 ? ' neg' : '') + '">' + fmt(i.bud - i.sp) + '</td><td class="num pv">' + (i.pend ? fmt(i.pend) : '–') + '</td></tr>').join('') + '</tbody></table></td></tr>';
       });
       h += '</tbody></table></div>';
@@ -4826,19 +4853,24 @@ async function pmSet(key, v){
 }
 function exportRp(){
   const D = rpData(); if (!D.R.P.length) return;
-  const sm = [['연구책임자', '과제 수', '실', '예산액', '집행액', '집행잔액', '집행률', '진행중'].map(H)];
-  D.ppl.forEach(p => sm.push([p.nm, N(p.t.n), p.rooms.join(', '), N(p.t.bud), N(p.t.sp), N(p.t.bud - p.t.sp), PC(p.t.bud ? p.t.sp / p.t.bud : 0), N(p.t.pend)]));
-  { const t = sumR(D.ppl.reduce((a, p) => a.concat(p.l), [])); sm.push([TB('합계'), TN(t.n), '', TN(t.bud), TN(t.sp), TN(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), TN(t.pend)]); }
-  if (D.none.length) { const t = sumR(D.none); sm.push(['(책임자 미지정)', N(t.n), '', N(t.bud), N(t.sp), N(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), N(t.pend)]); }
-  const pr = [['연구책임자', '실', '과제 구분', '과제', '예산액', '집행액', '집행잔액', '집행률', '진행중'].map(H)];
-  D.ppl.forEach(p => p.l.forEach(r => pr.push([p.nm, r.x.room, r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend)])));
-  D.none.forEach(r => pr.push(['(미지정)', r.x.room, r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend)]));
-  saveXlsx('연구자별_집행현황_' + YR + '.xlsx', [{ name: '연구자별 요약', widths: [16, 8, 30, 16, 16, 16, 10, 14], freeze: 1, rows: sm }, { name: '과제별', widths: [14, 20, 12, 40, 16, 16, 16, 10, 14], freeze: 1, rows: pr }]);
+  const RR = rpRooms(D, ''), row = (a, b, t) => [a, b, N(t.n), N(t.bud), N(t.sp), N(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), N(t.pend)];
+  const sm = [['실', '연구책임자', '과제 수', '예산액', '집행액', '집행잔액', '집행률', '진행중'].map(H)];
+  RR.forEach(g => { g.ppl.forEach(e => sm.push(row(g.rm, e.nm, e.t))); sm.push([TB(g.rm + ' 소계'), '', TN(g.t.n), TN(g.t.bud), TN(g.t.sp), TN(g.t.bud - g.t.sp), PC(g.t.bud ? g.t.sp / g.t.bud : 0), TN(g.t.pend)]); });
+  { const t = sumR(D.ppl.reduce((x, p) => x.concat(p.l), [])); sm.push([TB('합계'), '', TN(t.n), TN(t.bud), TN(t.sp), TN(t.bud - t.sp), PC(t.bud ? t.sp / t.bud : 0), TN(t.pend)]); }
+  if (D.none.length) sm.push(row('(책임자 미지정)', '', sumR(D.none)));
+  const pr = [['실', '연구책임자', '과제 구분', '과제', '예산액', '집행액', '집행잔액', '집행률', '진행중'].map(H)];
+  RR.forEach(g => g.ppl.forEach(e => e.l.forEach(r => pr.push([g.rm, e.nm, r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend)]))));
+  D.none.forEach(r => pr.push([r.x.room, '(미지정)', r.x.kind, r.x.name, N(r.bud), N(r.sp), N(r.bud - r.sp), PC(r.bud ? r.sp / r.bud : 0), N(r.pend)]));
+  saveXlsx('연구자별_집행현황_' + YR + '.xlsx', [{ name: '연구자별 요약', widths: [22, 16, 8, 16, 16, 16, 10, 14], freeze: 1, rows: sm }, { name: '과제별', widths: [20, 14, 12, 40, 16, 16, 16, 10, 14], freeze: 1, rows: pr }]);
 }
 function wireRp(){
   $('#rp-m-view').addEventListener('click', () => { RP.mode = 'view'; renderRp(); });
   $('#rp-m-pm').addEventListener('click', () => { RP.mode = 'pm'; renderRp(); });
-  $('#rp-q').addEventListener('input', e => { RP.q = e.target.value; const q = RP.q.replace(/\s/g, ''); if (q) { const l = rpData().ppl.filter(p => rpHit(p, q)); if (l.length === 1) RP.open.add(l[0].nm); } renderRp(); });
+  $('#rp-q').addEventListener('input', e => {
+    RP.q = e.target.value; const q = RP.q.replace(/\s/g, '');
+    if (q) { const RR = rpRooms(rpData(), q), nm = new Set(RR.reduce((x, g) => x.concat(g.ppl.map(z => z.nm)), [])); if (nm.size === 1) { RP.sel = RR[0].rm; RR.forEach(g => g.ppl.forEach(z => RP.open.add(g.rm + '|' + z.nm))); } }
+    renderRp();
+  });
   $('#rp-xl').addEventListener('click', exportRp);
   $('#rp-body').addEventListener('change', e => { const i = e.target.closest('.pm-in'); if (i) pmSet(i.dataset.pmk, i.value); });
   $('#rp-body').addEventListener('keydown', e => {
@@ -4848,7 +4880,8 @@ function wireRp(){
   });
   $('#rp-body').addEventListener('click', e => {
     if (e.target.closest('[data-rpgo]')) { RP.mode = 'pm'; renderRp(); window.scrollTo({ top: 0 }); return; }
-    const pa = e.target.closest('[data-rpall]'); if (pa) { const on = pa.dataset.rpall === '1', q = RP.q.replace(/\s/g, ''); rpData().ppl.filter(p => rpHit(p, q)).forEach(p => { if (on) RP.open.add(p.nm); else RP.open.delete(p.nm); }); renderRp(); return; }
+    const sl = e.target.closest('[data-rpsel]'); if (sl) { RP.sel = sl.dataset.rpsel; renderRp(); return; }
+    const pa = e.target.closest('[data-rpall]'); if (pa) { const on = pa.dataset.rpall === '1', G = rpRooms(rpData(), RP.q.replace(/\s/g, '')).find(g => g.rm === RP.sel); if (G) G.ppl.forEach(z => { const k = G.rm + '|' + z.nm; if (on) RP.open.add(k); else RP.open.delete(k); }); renderRp(); return; }
     const lfr = e.target.closest('tr[data-lf]'); if (lfr) { lfDetail(lfr.dataset.lfp || PART, lfr.dataset.lf); return; }
     const n = e.target.closest('[data-rpn]'); if (n) { const k = n.dataset.rpn; if (RP.open.has(k)) RP.open.delete(k); else RP.open.add(k); renderRp(); return; }
     const pr = e.target.closest('[data-rpp]'); if (pr) { const k = pr.dataset.rpp; if (RP.popen.has(k)) RP.popen.delete(k); else RP.popen.add(k); renderRp(); }
